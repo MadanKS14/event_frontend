@@ -6,7 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { Login } from './pages/Login'; // Assuming this is the path
 import { AdminDashboard } from './pages/AdminDashboard';
 import { UserDashboard } from './pages/UserDashboard';
-import {UserManagementPage} from './pages/UserManagementPage';
+import UserManagementPage from './pages/UserManagementPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
