@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { ProfileDropdown } from "../components/ProfileDropdown"; // <-- Correctly imported
+import { ProfileDropdown } from "../components/ProfileDropdown";
+import { Link } from 'react-router-dom'; // <-- 1. Import Link
 import {
-  // LogOut icon is no longer needed here
   Plus,
   Grid,
   Calendar as CalendarIcon,
@@ -12,14 +12,13 @@ import {
   Loader2,
   Bot,
   LayoutGrid,
+  Users, // <-- 2. Import Users icon
 } from "lucide-react";
 import { api } from "../utils/api";
 import { EventCard } from "../components/EventCard";
 import { EventModal } from "../components/EventModal";
-
 import { EventDetailsModal } from "../components/EventDetailsModal";
 import { CalendarView } from "../components/CalendarView";
-
 import { AIAssistant } from "../components/AIAssistant";
 import io from "socket.io-client";
 
@@ -28,7 +27,7 @@ const SOCKET_URL =
   "http://localhost:5000";
 
 export const AdminDashboard = () => {
-  const { user } = useAuth(); // <-- 'logout' no longer needed here
+  const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [events, setEvents] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
@@ -42,23 +41,15 @@ export const AdminDashboard = () => {
 
   useEffect(() => {
     loadEvents();
-    loadUsers();
+    loadUsers(); // Admins need the user list
 
     const newSocket = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
     });
 
-    newSocket.on("connect", () => {
-      console.log("WebSocket connected");
-    });
-
-    newSocket.on("task-created", () => {
-      console.log("Task created, refreshing...");
-    });
-
-    newSocket.on("task-updated", () => {
-      console.log("Task updated, refreshing...");
-    });
+    newSocket.on("connect", () => console.log("WebSocket connected"));
+    newSocket.on("task-created", loadEvents); // Refresh events if tasks change (e.g., progress)
+    newSocket.on("task-updated", loadEvents);
 
     setSocket(newSocket);
 
@@ -68,19 +59,21 @@ export const AdminDashboard = () => {
   }, []);
 
   const loadEvents = async () => {
+    // setLoading(true); // Only set loading initially
     try {
-      const data = await api.getEvents();
+      const data = await api.getEvents(); // Admin gets all events
       setEvents(data);
     } catch (error) {
       console.error("Failed to load events:", error);
     } finally {
-      setLoading(false);
+      // Avoid flicker on refresh
+      if (loading) setLoading(false);
     }
   };
 
   const loadUsers = async () => {
     try {
-      const data = await api.getUsers();
+      const data = await api.getUsers(); // Fetch all users for assignment dropdowns etc.
       setAllUsers(data);
     } catch (error) {
       console.error("Failed to load users:", error);
@@ -106,10 +99,10 @@ export const AdminDashboard = () => {
       }
       setShowEventModal(false);
       setEditingEvent(null);
-      loadEvents();
+      loadEvents(); // Refresh event list
     } catch (error) {
       console.error("Failed to save event:", error);
-      alert(error.message);
+      alert(error.message || 'Failed to save event');
     }
   };
 
@@ -118,10 +111,10 @@ export const AdminDashboard = () => {
 
     try {
       await api.deleteEvent(event._id);
-      loadEvents();
+      loadEvents(); // Refresh event list
     } catch (error) {
       console.error("Failed to delete event:", error);
-      alert(error.message);
+      alert(error.message || 'Failed to delete event');
     }
   };
 
@@ -131,7 +124,7 @@ export const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center transition-colors">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
       </div>
     );
@@ -142,6 +135,7 @@ export const AdminDashboard = () => {
       <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
+            {/* Logo and Welcome */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
                 <LayoutGrid className="w-6 h-6 text-white" />
@@ -156,7 +150,20 @@ export const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Navbar Controls */}
             <div className="flex items-center gap-3">
+
+              {/* --- 3. ADDED USER MANAGEMENT LINK --- */}
+              <Link
+                to="/admin/users"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shadow-sm"
+                title="Manage Users"
+              >
+                <Users className="w-5 h-5" />
+                <span className="hidden sm:inline">Users</span>
+              </Link>
+              {/* --- END OF NEW LINK --- */}
+
               <button
                 onClick={() => setShowAI(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
@@ -176,9 +183,7 @@ export const AdminDashboard = () => {
                 )}
               </button>
 
-              {/* --- THIS IS THE CHANGE --- */}
               <ProfileDropdown />
-
             </div>
           </div>
         </div>
@@ -230,6 +235,7 @@ export const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* --- Event Display --- */}
         {view === "grid" ? (
           events.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -240,35 +246,36 @@ export const AdminDashboard = () => {
                   onEdit={handleEditEvent}
                   onDelete={handleDeleteEvent}
                   onClick={handleEventClick}
-                  isUser={false} // <-- Explicitly set to false (or just remove, as false is default)
+                  isUser={false} // Admin view
                 />
               ))}
             </div>
           ) : (
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
-                <CalendarIcon className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                No events yet
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Create your first event to get started
-              </p>
-              <button
-                onClick={handleCreateEvent}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-                Create Event
-              </button>
-            </div>
-          )
+             <div className="text-center py-16">
+               <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                 <CalendarIcon className="w-10 h-10 text-gray-400" />
+               </div>
+               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                 No events yet
+               </h3>
+               <p className="text-gray-600 dark:text-gray-400 mb-6">
+                 Create your first event to get started
+               </p>
+               <button
+                 onClick={handleCreateEvent}
+                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg"
+               >
+                 <Plus className="w-5 h-5" />
+                 Create Event
+               </button>
+             </div>
+           )
         ) : (
           <CalendarView events={events} onEventClick={handleEventClick} />
         )}
       </div>
 
+      {/* --- Modals --- */}
       <EventModal
         isOpen={showEventModal}
         onClose={() => {
@@ -283,8 +290,8 @@ export const AdminDashboard = () => {
         isOpen={!!selectedEventId}
         onClose={() => setSelectedEventId(null)}
         eventId={selectedEventId}
-        allUsers={allUsers}
-        isUser={false} // <-- Explicitly set to false for admin
+        allUsers={allUsers} // Pass all users to details modal
+        isUser={false} // Admin view
       />
 
       <AIAssistant
@@ -292,7 +299,7 @@ export const AdminDashboard = () => {
         onClose={() => setShowAI(false)}
         events={events}
         onRefresh={loadEvents}
-        role="admin" // <-- Set role for AI
+        role="admin" // Admin role for AI
       />
     </div>
   );

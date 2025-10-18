@@ -1,203 +1,172 @@
-import { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Plus, Clock, User, Loader2, TrendingUp } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
+import { Plus, Trash2, Loader2, Info } from 'lucide-react';
 
-export const TaskManager = ({ event, allUsers }) => {
+export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
   const [tasks, setTasks] = useState([]);
-  const [progress, setProgress] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [newTask, setNewTask] = useState({
-    name: '',
-    deadline: '',
-    assignedAttendeeId: '',
-  });
+  const [loadingTasks, setLoadingTasks] = useState(true);
+  const [newTaskName, setNewTaskName] = useState('');
+  const [newTaskDeadline, setNewTaskDeadline] = useState('');
+  const [assignedUserId, setAssignedUserId] = useState('');
+  const [error, setError] = useState('');
+
+  // Fetch tasks when the event ID changes
+  const loadTasks = useCallback(async () => {
+    if (!event?._id) return;
+    setLoadingTasks(true);
+    try {
+      // Admin fetches all tasks for the event
+      const taskData = await api.getEventTasks(event._id);
+      setTasks(taskData);
+    } catch (err) {
+      console.error('Failed to load tasks:', err);
+      setError('Could not load tasks.');
+    } finally {
+      setLoadingTasks(false);
+    }
+  }, [event?._id]);
 
   useEffect(() => {
     loadTasks();
-    loadProgress();
-  }, [event._id]);
+  }, [loadTasks]);
 
-  const loadTasks = async () => {
-    try {
-      const data = await api.getEventTasks(event._id);
-      setTasks(data);
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadProgress = async () => {
-    try {
-      const data = await api.getEventProgress(event._id);
-      setProgress(data.progress || 0);
-    } catch (error) {
-      console.error('Failed to load progress:', error);
-    }
-  };
-
-  const handleToggleStatus = async (task) => {
-    try {
-      const newStatus = task.status === 'Pending' ? 'Completed' : 'Pending';
-      await api.updateTaskStatus(task._id, newStatus);
-      loadTasks();
-      loadProgress();
-    } catch (error) {
-      console.error('Failed to update task:', error);
-    }
-  };
-
+  // Handle adding a new task
   const handleAddTask = async (e) => {
     e.preventDefault();
-    if (!newTask.name || !newTask.deadline || !newTask.assignedAttendeeId) {
-      alert('Please fill all fields');
-      return;
-    }
+    if (!newTaskName || !newTaskDeadline || !assignedUserId || !isUpcoming) return;
+    setError('');
 
     try {
       await api.createTask({
-        ...newTask,
+        name: newTaskName,
+        deadline: newTaskDeadline,
         eventId: event._id,
+        assignedAttendeeId: assignedUserId, // Send assigned user ID
       });
-      setNewTask({ name: '', deadline: '', assignedAttendeeId: '' });
-      setShowAddTask(false);
-      loadTasks();
-      loadProgress();
-    } catch (error) {
-      console.error('Failed to create task:', error);
-      alert(error.message);
+      // Clear form and reload tasks
+      setNewTaskName('');
+      setNewTaskDeadline('');
+      setAssignedUserId('');
+      loadTasks(); // Reload tasks to show the new one
+    } catch (err) {
+      console.error('Failed to create task:', err);
+      setError(err.message || 'Failed to add task.');
     }
   };
 
-  const eventAttendees = event.attendees || [];
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
+  // Handle deleting a task (Placeholder - needs backend implementation)
+  const handleDeleteTask = async (taskId) => {
+    if (!isUpcoming) return;
+    alert('Delete task functionality needs backend implementation.');
+    // try {
+    //   // await api.deleteTask(taskId); // You'll need to add this API function
+    //   loadTasks();
+    // } catch (err) {
+    //   console.error('Failed to delete task:', err);
+    //   setError(err.message || 'Failed to delete task.');
+    // }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Tasks</h3>
-        <button
-          onClick={() => setShowAddTask(!showAddTask)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Task
-        </button>
-      </div>
-
-      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-4 rounded-xl">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Progress
-          </span>
-          <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{progress}%</span>
+    <div className="space-y-4">
+      {/* Warning message if event is completed */}
+      {!isUpcoming && (
+        <div className="flex items-center gap-2 p-3 text-sm text-yellow-800 bg-yellow-100 dark:text-yellow-200 dark:bg-yellow-900/30 rounded-md">
+          <Info className="w-5 h-5 flex-shrink-0" />
+          <span>This event is completed. Tasks can no longer be managed.</span>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-500 rounded-full"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-
-      {showAddTask && (
-        <form onSubmit={handleAddTask} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-3">
-          <input
-            type="text"
-            placeholder="Task name"
-            value={newTask.name}
-            onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          />
-          <input
-            type="datetime-local"
-            value={newTask.deadline}
-            onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          />
-          <select
-            value={newTask.assignedAttendeeId}
-            onChange={(e) => setNewTask({ ...newTask, assignedAttendeeId: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          >
-            <option value="">Select attendee</option>
-            {eventAttendees.map((attendee) => (
-              <option key={attendee._id} value={attendee._id}>
-                {attendee.name}
-              </option>
-            ))}
-          </select>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setShowAddTask(false)}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-gray-700 dark:text-gray-300"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              Add Task
-            </button>
-          </div>
-        </form>
       )}
 
-      <div className="space-y-2">
-        {tasks.map((task) => (
-          <div
-            key={task._id}
-            className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all"
+      {/* --- Add New Task Form (Admin only) --- */}
+      <form onSubmit={handleAddTask} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end p-4 border dark:border-gray-700 rounded-lg">
+        <div>
+          <label htmlFor="taskName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
+          <input
+            id="taskName"
+            type="text"
+            value={newTaskName}
+            onChange={(e) => setNewTaskName(e.target.value)}
+            placeholder="e.g., Prepare slides"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 disabled:opacity-50"
+            required
+            disabled={!isUpcoming}
+          />
+        </div>
+        <div>
+          <label htmlFor="taskDeadline" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deadline</label>
+          <input
+            id="taskDeadline"
+            type="datetime-local"
+            value={newTaskDeadline}
+            onChange={(e) => setNewTaskDeadline(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 disabled:opacity-50"
+            required
+            disabled={!isUpcoming}
+          />
+        </div>
+        <div>
+          <label htmlFor="assignee" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign To</label>
+          <select
+            id="assignee"
+            value={assignedUserId}
+            onChange={(e) => setAssignedUserId(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 disabled:opacity-50"
+            required
+            disabled={!isUpcoming}
           >
-            <button
-              onClick={() => handleToggleStatus(task)}
-              className="mt-1 flex-shrink-0"
+            <option value="">Select User...</option>
+            {allUsers.map(user => (
+              <option key={user._id} value={user._id}>{user.name} ({user.email})</option>
+            ))}
+          </select>
+        </div>
+        <div className="md:col-span-3">
+          <button
+            type="submit"
+            className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!isUpcoming}
+          >
+            <Plus className="w-5 h-5" /> Add Task
+          </button>
+        </div>
+      </form>
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+      {/* --- Task List --- */}
+      {loadingTasks ? (
+        <div className="flex justify-center items-center h-20">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+        </div>
+      ) : tasks.length > 0 ? (
+        <ul className="space-y-2">
+          {tasks.map((task) => (
+            <li
+              key={task._id}
+              className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
             >
-              {task.status === 'Completed' ? (
-                <CheckCircle className="w-5 h-5 text-green-500" />
-              ) : (
-                <Circle className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
-
-            <div className="flex-1 min-w-0">
-              <p className={`font-medium ${task.status === 'Completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
-                {task.name}
-              </p>
-              <div className="flex flex-wrap gap-3 mt-1 text-sm text-gray-600 dark:text-gray-400">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {new Date(task.deadline).toLocaleString()}
+              <div>
+                <span className={`font-medium text-gray-900 dark:text-gray-100 ${task.status === 'Completed' ? 'line-through text-gray-500' : ''}`}>
+                  {task.name}
                 </span>
-                {task.assignedAttendee && (
-                  <span className="flex items-center gap-1">
-                    <User className="w-3 h-3" />
-                    {task.assignedAttendee.name}
-                  </span>
-                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Assigned to: {task.assignedAttendee?.name || 'N/A'} - Due: {new Date(task.deadline).toLocaleDateString()}
+                  {task.status === 'Completed' ? ' (Completed)' : ''}
+                </p>
               </div>
-            </div>
-          </div>
-        ))}
-
-        {tasks.length === 0 && (
-          <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-            No tasks yet. Create one to get started!
-          </p>
-        )}
-      </div>
+              <button
+                onClick={() => handleDeleteTask(task._id)}
+                className="p-1 text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!isUpcoming} // Disable delete if event completed
+                aria-label="Delete task"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No tasks added yet.</p>
+      )}
     </div>
   );
 };

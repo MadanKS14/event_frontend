@@ -170,6 +170,22 @@ export const api = {
     return response.json();
   },
 
+  async createUserByAdmin(userData) {
+    const response = await fetch(`${API_BASE_URL}/users`, { // Hits POST /api/users
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create user');
+    }
+    return response.json();
+  },
+
   async getEventProgress(eventId) {
     const response = await fetch(`${API_BASE_URL}/tasks/progress/${eventId}`, {
       headers: getAuthHeader(),

@@ -6,6 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { Login } from './pages/Login'; // Assuming this is the path
 import { AdminDashboard } from './pages/AdminDashboard';
 import { UserDashboard } from './pages/UserDashboard';
+import {UserManagementPage} from './pages/UserManagementPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
@@ -51,14 +52,17 @@ function App() {
             {/* Admin Routes */}
             <Route element={<AdminRoute />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              {/* e.g., <Route path="/admin/users" element={<UserManagement />} /> */}
+              <Route path="/admin/users" element={<UserManagementPage />} />
+              
             </Route>
             
             {/* User Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/user/dashboard" element={<UserDashboard />} />
               {/* e.g., <Route path="/user/profile" element={<Profile />} /> */}
+
             </Route>
+            
 
           </Routes>
         </BrowserRouter>
