@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react"; // <-- Import useMemo
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { ProfileDropdown } from "../components/ProfileDropdown";
-import { Link } from 'react-router-dom'; // <-- 1. Import Link
+import { Link } from 'react-router-dom';
 import {
   Plus,
   Grid,
@@ -12,7 +12,8 @@ import {
   Loader2,
   Bot,
   LayoutGrid,
-  Users, // <-- 2. Import Users icon
+  Users,
+  Search, // <-- Import Search icon
 } from "lucide-react";
 import { api } from "../utils/api";
 import { EventCard } from "../components/EventCard";
@@ -38,17 +39,18 @@ export const AdminDashboard = () => {
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [showAI, setShowAI] = useState(false);
   const [socket, setSocket] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(''); // <-- 1. Add search state
 
   useEffect(() => {
     loadEvents();
-    loadUsers(); // Admins need the user list
+    loadUsers();
 
     const newSocket = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
     });
 
     newSocket.on("connect", () => console.log("WebSocket connected"));
-    newSocket.on("task-created", loadEvents); // Refresh events if tasks change (e.g., progress)
+    newSocket.on("task-created", loadEvents);
     newSocket.on("task-updated", loadEvents);
 
     setSocket(newSocket);
@@ -56,24 +58,23 @@ export const AdminDashboard = () => {
     return () => {
       newSocket.disconnect();
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const loadEvents = async () => {
-    // setLoading(true); // Only set loading initially
+    // setLoading(true); // Maybe only set loading on initial load?
     try {
-      const data = await api.getEvents(); // Admin gets all events
+      const data = await api.getEvents();
       setEvents(data);
     } catch (error) {
       console.error("Failed to load events:", error);
     } finally {
-      // Avoid flicker on refresh
-      if (loading) setLoading(false);
+      if (loading) setLoading(false); // Only stop initial loading spinner
     }
   };
 
   const loadUsers = async () => {
     try {
-      const data = await api.getUsers(); // Fetch all users for assignment dropdowns etc.
+      const data = await api.getUsers();
       setAllUsers(data);
     } catch (error) {
       console.error("Failed to load users:", error);
@@ -99,7 +100,7 @@ export const AdminDashboard = () => {
       }
       setShowEventModal(false);
       setEditingEvent(null);
-      loadEvents(); // Refresh event list
+      loadEvents();
     } catch (error) {
       console.error("Failed to save event:", error);
       alert(error.message || 'Failed to save event');
@@ -108,10 +109,9 @@ export const AdminDashboard = () => {
 
   const handleDeleteEvent = async (event) => {
     if (!confirm(`Are you sure you want to delete "${event.name}"?`)) return;
-
     try {
       await api.deleteEvent(event._id);
-      loadEvents(); // Refresh event list
+      loadEvents();
     } catch (error) {
       console.error("Failed to delete event:", error);
       alert(error.message || 'Failed to delete event');
@@ -121,6 +121,19 @@ export const AdminDashboard = () => {
   const handleEventClick = (event) => {
     setSelectedEventId(event._id);
   };
+
+  // --- Filter Events based on searchTerm ---
+  const filteredEvents = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return events; // Return all if search is empty
+    }
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return events.filter(event =>
+      event.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+      (event.description && event.description.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (event.location && event.location.toLowerCase().includes(lowerCaseSearchTerm))
+    );
+  }, [events, searchTerm]);
 
   if (loading) {
     return (
@@ -136,7 +149,7 @@ export const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo and Welcome */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0"> {/* Added flex-shrink-0 */}
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
                 <LayoutGrid className="w-6 h-6 text-white" />
               </div>
@@ -150,10 +163,25 @@ export const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Navbar Controls */}
-            <div className="flex items-center gap-3">
+            {/* --- Search Input --- */}
+            <div className="flex-1 max-w-lg mx-4"> {/* Adjusted width/margins */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search events by name, description, location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+            {/* --- End Search Input --- */}
 
-              {/* --- 3. ADDED USER MANAGEMENT LINK --- */}
+            {/* Navbar Controls (Right side) */}
+            <div className="flex items-center gap-3 flex-shrink-0"> {/* Added flex-shrink-0 */}
               <Link
                 to="/admin/users"
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shadow-sm"
@@ -162,8 +190,6 @@ export const AdminDashboard = () => {
                 <Users className="w-5 h-5" />
                 <span className="hidden sm:inline">Users</span>
               </Link>
-              {/* --- END OF NEW LINK --- */}
-
               <button
                 onClick={() => setShowAI(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
@@ -171,7 +197,6 @@ export const AdminDashboard = () => {
                 <Bot className="w-5 h-5" />
                 <span className="hidden sm:inline">AI Assistant</span>
               </button>
-
               <button
                 onClick={toggleTheme}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -182,7 +207,6 @@ export const AdminDashboard = () => {
                   <Moon className="w-5 h-5 text-gray-700" />
                 )}
               </button>
-
               <ProfileDropdown />
             </div>
           </div>
@@ -200,46 +224,27 @@ export const AdminDashboard = () => {
               Manage and organize all events
             </p>
           </div>
-
           <div className="flex gap-3">
-            <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-md p-1 transition-colors">
-              <button
-                onClick={() => setView("grid")}
-                className={`p-2 rounded-md transition-colors ${
-                  view === "grid"
-                    ? "bg-blue-500 text-white"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setView("calendar")}
-                className={`p-2 rounded-md transition-colors ${
-                  view === "calendar"
-                    ? "bg-blue-500 text-white"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
-              >
-                <CalendarIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <button
-              onClick={handleCreateEvent}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="font-medium">Create Event</span>
-            </button>
+             <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-md p-1 transition-colors">
+                <button onClick={() => setView("grid")} className={`p-2 rounded-md transition-colors ${ view === "grid" ? "bg-blue-500 text-white" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" }`}>
+                  <Grid className="w-5 h-5" />
+                </button>
+                <button onClick={() => setView("calendar")} className={`p-2 rounded-md transition-colors ${ view === "calendar" ? "bg-blue-500 text-white" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" }`}>
+                  <CalendarIcon className="w-5 h-5" />
+                </button>
+             </div>
+             <button onClick={handleCreateEvent} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl">
+               <Plus className="w-5 h-5" />
+               <span className="font-medium">Create Event</span>
+             </button>
           </div>
         </div>
 
-        {/* --- Event Display --- */}
+        {/* --- Event Display (Uses filteredEvents) --- */}
         {view === "grid" ? (
-          events.length > 0 ? (
+          filteredEvents.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event) => (
+              {filteredEvents.map((event) => ( // <-- Use filteredEvents
                 <EventCard
                   key={event._id}
                   event={event}
@@ -256,22 +261,26 @@ export const AdminDashboard = () => {
                  <CalendarIcon className="w-10 h-10 text-gray-400" />
                </div>
                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                 No events yet
+                 {searchTerm ? 'No events match your search' : 'No events yet'}
                </h3>
-               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                 Create your first event to get started
-               </p>
-               <button
-                 onClick={handleCreateEvent}
-                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg"
-               >
-                 <Plus className="w-5 h-5" />
-                 Create Event
-               </button>
+               {!searchTerm && ( // Only show create button if not searching
+                 <>
+                   <p className="text-gray-600 dark:text-gray-400 mb-6">
+                     Create your first event to get started
+                   </p>
+                   <button
+                     onClick={handleCreateEvent}
+                     className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg"
+                   >
+                     <Plus className="w-5 h-5" />
+                     Create Event
+                   </button>
+                 </>
+               )}
              </div>
            )
         ) : (
-          <CalendarView events={events} onEventClick={handleEventClick} />
+          <CalendarView events={filteredEvents} onEventClick={handleEventClick} /> // <-- Use filteredEvents
         )}
       </div>
 
@@ -285,19 +294,17 @@ export const AdminDashboard = () => {
         onSave={handleSaveEvent}
         event={editingEvent}
       />
-
       <EventDetailsModal
         isOpen={!!selectedEventId}
         onClose={() => setSelectedEventId(null)}
         eventId={selectedEventId}
-        allUsers={allUsers} // Pass all users to details modal
+        allUsers={allUsers}
         isUser={false} // Admin view
       />
-
       <AIAssistant
         isOpen={showAI}
         onClose={() => setShowAI(false)}
-        events={events}
+        events={events} // Pass original events to AI for context if needed
         onRefresh={loadEvents}
         role="admin" // Admin role for AI
       />
