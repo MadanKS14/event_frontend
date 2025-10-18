@@ -151,6 +151,25 @@ export const api = {
     return response.json();
   },
 
+
+  async updateUserProfile(userData) {
+    // userData will be an object like { name: "New Name", password: "newpassword" }
+    const response = await fetch(`${API_BASE_URL}/users/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update profile');
+    }
+    return response.json();
+  },
+
   async getEventProgress(eventId) {
     const response = await fetch(`${API_BASE_URL}/tasks/progress/${eventId}`, {
       headers: getAuthHeader(),
@@ -159,3 +178,6 @@ export const api = {
     return response.json();
   },
 };
+
+
+

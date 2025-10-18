@@ -47,12 +47,24 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+
+
+  const updateUser = (data) => {
+
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data));
+
+    // 2. Update the React state
+    setUser(data);
+  };
+
   const value = {
     user,
     login,
     register,
     logout,
     loading,
+    updateUser,
     isAuthenticated: !!user,
   };
 

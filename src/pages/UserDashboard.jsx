@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { ProfileDropdown } from "../components/ProfileDropdown"; // <-- You already have this (Good!)
 import {
-  LogOut,
+  // LogOut icon is no longer needed here, it's in the dropdown
   Grid,
   Calendar as CalendarIcon,
   Moon,
@@ -24,7 +25,7 @@ const SOCKET_URL =
   "http://localhost:5000";
 
 export const UserDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth(); // 'logout' is no longer called directly here
   const { isDark, toggleTheme } = useTheme();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -117,13 +118,10 @@ export const UserDashboard = () => {
                   <Moon className="w-5 h-5 text-gray-700" />
                 )}
               </button>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
+              
+              {/* --- THIS IS THE CHANGE --- */}
+              <ProfileDropdown />
+              
             </div>
           </div>
         </div>

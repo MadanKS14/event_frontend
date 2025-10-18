@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { ProfileDropdown } from "../components/ProfileDropdown"; // <-- Correctly imported
 import {
-  LogOut,
+  // LogOut icon is no longer needed here
   Plus,
   Grid,
   Calendar as CalendarIcon,
@@ -27,7 +28,7 @@ const SOCKET_URL =
   "http://localhost:5000";
 
 export const AdminDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth(); // <-- 'logout' no longer needed here
   const { isDark, toggleTheme } = useTheme();
   const [events, setEvents] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
@@ -150,7 +151,7 @@ export const AdminDashboard = () => {
                   Event Manager
                 </h1>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Welcome, {user?.name}
+                  Welcome, {user?.name} (Admin)
                 </p>
               </div>
             </div>
@@ -175,26 +176,23 @@ export const AdminDashboard = () => {
                 )}
               </button>
 
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
+              {/* --- THIS IS THE CHANGE --- */}
+              <ProfileDropdown />
+
             </div>
           </div>
         </div>
       </nav>
 
+      {/* --- Main Content Area --- */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Your Events
+              Admin Dashboard
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Manage and organize your events effortlessly
+              Manage and organize all events
             </p>
           </div>
 
@@ -202,19 +200,21 @@ export const AdminDashboard = () => {
             <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-md p-1 transition-colors">
               <button
                 onClick={() => setView("grid")}
-                className={`p-2 rounded-md transition-colors ${view === "grid"
+                className={`p-2 rounded-md transition-colors ${
+                  view === "grid"
                     ? "bg-blue-500 text-white"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
+                }`}
               >
                 <Grid className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setView("calendar")}
-                className={`p-2 rounded-md transition-colors ${view === "calendar"
+                className={`p-2 rounded-md transition-colors ${
+                  view === "calendar"
                     ? "bg-blue-500 text-white"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
+                }`}
               >
                 <CalendarIcon className="w-5 h-5" />
               </button>
@@ -240,6 +240,7 @@ export const AdminDashboard = () => {
                   onEdit={handleEditEvent}
                   onDelete={handleDeleteEvent}
                   onClick={handleEventClick}
+                  isUser={false} // <-- Explicitly set to false (or just remove, as false is default)
                 />
               ))}
             </div>
@@ -283,6 +284,7 @@ export const AdminDashboard = () => {
         onClose={() => setSelectedEventId(null)}
         eventId={selectedEventId}
         allUsers={allUsers}
+        isUser={false} // <-- Explicitly set to false for admin
       />
 
       <AIAssistant
@@ -290,6 +292,7 @@ export const AdminDashboard = () => {
         onClose={() => setShowAI(false)}
         events={events}
         onRefresh={loadEvents}
+        role="admin" // <-- Set role for AI
       />
     </div>
   );
