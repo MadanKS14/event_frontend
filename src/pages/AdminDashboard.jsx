@@ -13,18 +13,20 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { api } from "../utils/api";
-import { EventCard } from "./EventCard";
-import { EventModal } from "./EventModal";
-import { EventDetailsModal } from "./EventDetailsModal";
-import { CalendarView } from "./CalendarView";
-import { AIAssistant } from "./AIAssistant";
+import { EventCard } from "../components/EventCard";
+import { EventModal } from "../components/EventModal";
+
+import { EventDetailsModal } from "../components/EventDetailsModal";
+import { CalendarView } from "../components/CalendarView";
+
+import { AIAssistant } from "../components/AIAssistant";
 import io from "socket.io-client";
 
 const SOCKET_URL =
   import.meta.env.VITE_API_BASE_URL?.replace("/api", "") ||
   "http://localhost:5000";
 
-export const Dashboard = () => {
+export const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [events, setEvents] = useState([]);
@@ -200,21 +202,19 @@ export const Dashboard = () => {
             <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-md p-1 transition-colors">
               <button
                 onClick={() => setView("grid")}
-                className={`p-2 rounded-md transition-colors ${
-                  view === "grid"
+                className={`p-2 rounded-md transition-colors ${view === "grid"
                     ? "bg-blue-500 text-white"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
+                  }`}
               >
                 <Grid className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setView("calendar")}
-                className={`p-2 rounded-md transition-colors ${
-                  view === "calendar"
+                className={`p-2 rounded-md transition-colors ${view === "calendar"
                     ? "bg-blue-500 text-white"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
+                  }`}
               >
                 <CalendarIcon className="w-5 h-5" />
               </button>

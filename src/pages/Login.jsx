@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, UserPlus, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -8,6 +9,7 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
+  const navigate =useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,6 +27,8 @@ export const Login = () => {
         }
         await register(formData.name, formData.email, formData.password);
       }
+      navigate('/');
+      
     } catch (err) {
       setError(err.message);
     } finally {

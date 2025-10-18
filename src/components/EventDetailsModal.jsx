@@ -1,22 +1,73 @@
-import { useState, useEffect } from 'react';
-import { X, Calendar, MapPin, Users as UsersIcon, ListTodo } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, Calendar, MapPin, Users as UsersIcon, ListTodo, Loader2 } from 'lucide-react';
 import { AttendeeManager } from './AttendeeManager';
 import { TaskManager } from './TaskManager';
 import { api } from '../utils/api';
 import { getEventImage, getEventTypeFromName } from '../utils/eventImages';
 
-export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers }) => {
+// --- 1. NEW COMPONENT: User-Only Task List ---
+// A simple list component just for the user's view.
+const UserTaskList = ({ tasks, onStatusChange, loading }) => {
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-40">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+        You have no tasks assigned for this event.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="space-y-3">
+      {tasks.map((task) => (
+        <li
+          key={task._id}
+          className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+        >
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="h-5 w-5 rounded text-blue-500 focus:ring-blue-500"
+              checked={task.status === "Completed"}
+              onChange={(e) => onStatusChange(task._id, e.target.checked)}
+            />
+            <span
+              className={`text-gray-900 dark:text-gray-100 ${
+                task.status === "Completed" ? "line-through text-gray-500" : ""
+              }`}
+            >
+              {task.name}
+            </span>
+          </label>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            Due: {new Date(task.deadline).toLocaleDateString()}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+// --- 2. UPDATED MODAL: Now accepts 'isUser' prop ---
+export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers, isUser = false }) => {
   const [event, setEvent] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (isOpen && eventId) {
-      loadEvent();
-    }
-  }, [isOpen, eventId]);
+  // --- 3. NEW STATE: For user's tasks ---
+  const [userTasks, setUserTasks] = useState([]);
+  const [loadingTasks, setLoadingTasks] = useState(true);
 
-  const loadEvent = async () => {
+  // --- 4. UPDATED: Load event data ---
+  const loadEvent = useCallback(async () => {
+    if (!eventId) return;
     setLoading(true);
     try {
       const data = await api.getEvent(eventId);
@@ -25,6 +76,55 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers }) => {
       console.error('Failed to load event:', error);
     } finally {
       setLoading(false);
+    }
+  }, [eventId]);
+
+  // --- 5. NEW: Load tasks ONLY for the user ---
+  const loadUserTasks = useCallback(async () => {
+    if (!eventId || !isUser) return; // Only run if we are a user
+    setLoadingTasks(true);
+    try {
+      // This API call is role-aware!
+      // The backend will only send tasks for this user.
+      const taskData = await api.getEventTasks(eventId);
+      setUserTasks(taskData);
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+    } finally {
+      setLoadingTasks(false);
+    }
+  }, [eventId, isUser]);
+
+  // --- 6. UPDATED: useEffect to load data ---
+  useEffect(() => {
+    if (isOpen && eventId) {
+      loadEvent();
+      if (isUser) {
+        // If we are a user, load our tasks
+        loadUserTasks();
+      }
+      setActiveTab('details'); // Reset tab on open
+    }
+  }, [isOpen, eventId, isUser, loadEvent, loadUserTasks]); // Added dependencies
+
+  // --- 7. NEW: Handler for user to update task status ---
+  const handleStatusChange = async (taskId, isChecked) => {
+    const newStatus = isChecked ? "Completed" : "Pending";
+
+    // Optimistic UI update for instant feedback
+    setUserTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task._id === taskId ? { ...task, status: newStatus } : task
+      )
+    );
+
+    try {
+      // Call the API
+      await api.updateTaskStatus(taskId, newStatus);
+    } catch (error) {
+      console.error("Failed to update task:", error);
+      // On error, roll back by refetching
+      loadUserTasks();
     }
   };
 
@@ -37,10 +137,11 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers }) => {
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-colors">
         {loading ? (
           <div className="flex items-center justify-center h-96">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+            <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
           </div>
         ) : event ? (
           <>
+            {/* --- Header / Image Section (No changes) --- */}
             <div className="relative h-48">
               <img
                 src={eventImage}
@@ -69,6 +170,7 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers }) => {
               </div>
             </div>
 
+            {/* --- 8. UPDATED: Tabs (Attendee tab is hidden for user) --- */}
             <div className="flex border-b border-gray-200 dark:border-gray-700 px-6">
               <button
                 onClick={() => setActiveTab('details')}
@@ -83,20 +185,25 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers }) => {
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" />
                 )}
               </button>
-              <button
-                onClick={() => setActiveTab('attendees')}
-                className={`px-4 py-3 font-medium transition-colors relative flex items-center gap-2 ${
-                  activeTab === 'attendees'
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                }`}
-              >
-                <UsersIcon className="w-4 h-4" />
-                Attendees ({event.attendees?.length || 0})
-                {activeTab === 'attendees' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" />
-                )}
-              </button>
+              
+              {/* --- 9. HIDE ATTENDEE TAB FOR USER --- */}
+              {!isUser && (
+                <button
+                  onClick={() => setActiveTab('attendees')}
+                  className={`px-4 py-3 font-medium transition-colors relative flex items-center gap-2 ${
+                    activeTab === 'attendees'
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <UsersIcon className="w-4 h-4" />
+                  Attendees ({event.attendees?.length || 0})
+                  {activeTab === 'attendees' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" />
+                  )}
+                </button>
+              )}
+              
               <button
                 onClick={() => setActiveTab('tasks')}
                 className={`px-4 py-3 font-medium transition-colors relative flex items-center gap-2 ${
@@ -113,6 +220,7 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers }) => {
               </button>
             </div>
 
+            {/* --- 10. UPDATED: Tab Content (Role-based) --- */}
             <div className="flex-1 overflow-y-auto p-6">
               {activeTab === 'details' && (
                 <div className="space-y-4">
@@ -145,12 +253,24 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers }) => {
                 </div>
               )}
 
-              {activeTab === 'attendees' && (
+              {/* --- HIDE ATTENDEE MANAGER FOR USER --- */}
+              {activeTab === 'attendees' && !isUser && (
                 <AttendeeManager event={event} onUpdate={loadEvent} />
               )}
-
+              
+              {/* --- ROLE-BASED TASK CONTENT --- */}
               {activeTab === 'tasks' && (
-                <TaskManager event={event} allUsers={allUsers} />
+                isUser ? (
+                  // User's View:
+                  <UserTaskList 
+                    tasks={userTasks} 
+                    loading={loadingTasks} 
+                    onStatusChange={handleStatusChange} 
+                  />
+                ) : (
+                  // Admin's View:
+                  <TaskManager event={event} allUsers={allUsers} />
+                )
               )}
             </div>
           </>
