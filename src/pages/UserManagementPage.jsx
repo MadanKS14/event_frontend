@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Plus, Info, Users, ShieldCheck, User, ArrowLeft } from 'lucide-react'; // <-- 1. Import ArrowLeft
-import CreateUserModal from "../components/CreateUserModal"; // Corrected import based on previous error
-import { useNavigate } from 'react-router-dom'; // Correctly imported
+import { Loader2, Plus, Info, Users, ShieldCheck, User, ArrowLeft } from 'lucide-react';
+import CreateUserModal from "../components/CreateUserModal";
+import { useNavigate } from 'react-router-dom';
 
-// --- Main User Management Page ---
+
 const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const navigate = useNavigate(); // Correctly initialized
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   const loadUsers = useCallback(async () => {
@@ -19,7 +19,6 @@ const UserManagementPage = () => {
     setError('');
     try {
       const data = await api.getUsers();
-      // Filter out the current admin from the list
       setUsers(data.filter(u => u._id !== user._id));
     } catch (err) {
       console.error("Failed to load users:", err);
@@ -35,22 +34,17 @@ const UserManagementPage = () => {
 
   return (
     <div className="p-4 md:p-8">
-      {/* --- 2. Corrected Header Layout --- */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        {/* Container for Back Button and Title */}
         <div className="flex items-center gap-3">
-           {/* Back Button */}
-           <button
-             onClick={() => navigate(-1)} // Or navigate('/admin/dashboard')
-             className="p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-             aria-label="Go back"
-           >
-             <ArrowLeft className="w-6 h-6" />
-           </button>
-           {/* Title */}
-           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
         </div>
-        {/* Create User Button */}
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 self-start md:self-center" // Adjusted alignment
@@ -58,15 +52,12 @@ const UserManagementPage = () => {
           <Plus className="w-5 h-5" /> Create User
         </button>
       </div>
-      {/* --- End Corrected Header --- */}
-
-
       {error && (
         <div className="mb-4 p-3 text-sm text-red-800 bg-red-100 dark:text-red-200 dark:bg-red-900/30 rounded-md flex items-center gap-2">
-           <Info className="w-5 h-5 flex-shrink-0" />
-           {error}
+          <Info className="w-5 h-5 flex-shrink-0" />
+          {error}
         </div>
-       )}
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -90,13 +81,13 @@ const UserManagementPage = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{u.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     {u.role === 'admin' ? (
-                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                         <ShieldCheck className="w-3 h-3" /> Admin
-                       </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                        <ShieldCheck className="w-3 h-3" /> Admin
+                      </span>
                     ) : (
-                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                         <User className="w-3 h-3" /> User
-                       </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        <User className="w-3 h-3" /> User
+                      </span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
@@ -107,12 +98,10 @@ const UserManagementPage = () => {
             </tbody>
           </table>
           {users.length === 0 && !loading && (
-             <p className="text-center py-10 text-gray-500 dark:text-gray-400">No other users found.</p>
-           )}
+            <p className="text-center py-10 text-gray-500 dark:text-gray-400">No other users found.</p>
+          )}
         </div>
       )}
-
-      {/* Render the imported modal component */}
       <CreateUserModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}

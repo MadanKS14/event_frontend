@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { api } from '../utils/api'; // Make sure the path is correct
+import { api } from '../utils/api'; 
 import { Loader2, X, Save } from 'lucide-react';
 
-// Export the component as default or named, choose one
  const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Reset form when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       setFormData({ name: '', email: '', password: '', role: 'user' });
@@ -37,7 +35,6 @@ import { Loader2, X, Save } from 'lucide-react';
 
   if (!isOpen) return null;
 
-  // Tailwind classes for form elements
   const inputClasses = "mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100";
 
   return (

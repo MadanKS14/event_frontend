@@ -4,7 +4,7 @@ import { getEventImage, getEventTypeFromName } from '../utils/eventImages';
 export const EventCard = ({ event, onEdit, onDelete, onClick, isUser = false }) => {
   const eventImage = getEventImage(event.name, getEventTypeFromName(event.name));
   const eventDate = new Date(event.date);
-  const isUpcoming = eventDate > new Date(); // Check if event is in the future
+  const isUpcoming = eventDate > new Date(); 
 
   return (
     <div
@@ -26,7 +26,6 @@ export const EventCard = ({ event, onEdit, onDelete, onClick, isUser = false }) 
           </div>
         </div>
 
-        {/* --- Badge Logic --- */}
         {isUpcoming ? (
           <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
             <Clock className="w-3 h-3" />
@@ -56,8 +55,6 @@ export const EventCard = ({ event, onEdit, onDelete, onClick, isUser = false }) 
           </div>
         </div>
 
-        {/* --- UPDATED Admin Buttons Logic --- */}
-        {/* Only show if NOT a user AND event is upcoming */}
         {!isUser && isUpcoming && (
           <div className="flex gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
             <button

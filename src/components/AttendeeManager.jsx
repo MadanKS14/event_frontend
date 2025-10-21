@@ -8,7 +8,6 @@ export const AttendeeManager = ({ event, onUpdate, isUpcoming }) => {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [error, setError] = useState('');
 
-  // Fetch all users to populate the dropdown
   const loadAllUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
@@ -26,39 +25,32 @@ export const AttendeeManager = ({ event, onUpdate, isUpcoming }) => {
     loadAllUsers();
   }, [loadAllUsers]);
 
-  // Handle adding an attendee
   const handleAddAttendee = async () => {
     if (!selectedUserId || !isUpcoming) return;
     setError('');
     try {
       await api.addAttendee(event._id, selectedUserId);
-      setSelectedUserId(''); // Reset dropdown
-      onUpdate(); // Trigger parent (EventDetailsModal) to reload event data
+      setSelectedUserId('');
+      onUpdate(); 
     } catch (err) {
       console.error('Failed to add attendee:', err);
       setError(err.message || 'Failed to add attendee.');
     }
   };
 
-  // Handle removing an attendee
   const handleRemoveAttendee = async (userIdToRemove) => {
     if (!isUpcoming) return;
-     // Prevent removing the event creator (optional rule)
-    // if (userIdToRemove === event.createdBy) {
-    //   setError("Cannot remove the event creator.");
-    //   return;
-    // }
+    
     setError('');
     try {
       await api.removeAttendee(event._id, userIdToRemove);
-      onUpdate(); // Trigger parent to reload event data
+      onUpdate(); 
     } catch (err) {
       console.error('Failed to remove attendee:', err);
       setError(err.message || 'Failed to remove attendee.');
     }
   };
 
-  // Filter out users who are already attendees to show in the dropdown
   const usersToAdd = useMemo(() => {
     const attendeeIds = event?.attendees?.map(att => att._id) || [];
     return allUsers.filter(user => !attendeeIds.includes(user._id));
@@ -66,7 +58,6 @@ export const AttendeeManager = ({ event, onUpdate, isUpcoming }) => {
 
   return (
     <div className="space-y-4">
-       {/* Warning message if event is completed */}
        {!isUpcoming && (
         <div className="flex items-center gap-2 p-3 text-sm text-yellow-800 bg-yellow-100 dark:text-yellow-200 dark:bg-yellow-900/30 rounded-md">
           <Info className="w-5 h-5 flex-shrink-0" />
@@ -74,7 +65,6 @@ export const AttendeeManager = ({ event, onUpdate, isUpcoming }) => {
         </div>
       )}
 
-      {/* --- Add Attendee Section (Admin only) --- */}
       <div className="flex gap-2 items-end p-4 border dark:border-gray-700 rounded-lg">
         <div className="flex-1">
           <label htmlFor="attendeeSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Add Attendee</label>
@@ -107,7 +97,6 @@ export const AttendeeManager = ({ event, onUpdate, isUpcoming }) => {
       </div>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      {/* --- Current Attendee List --- */}
       <div>
         <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">Current Attendees ({event?.attendees?.length || 0})</h4>
         {event?.attendees?.length > 0 ? (
@@ -118,7 +107,7 @@ export const AttendeeManager = ({ event, onUpdate, isUpcoming }) => {
                 <button
                   onClick={() => handleRemoveAttendee(attendee._id)}
                   className="p-1 text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={!isUpcoming} // Disable remove if event completed
+                  disabled={!isUpcoming} 
                   aria-label={`Remove ${attendee.name}`}
                 >
                   <XCircle className="w-4 h-4" />

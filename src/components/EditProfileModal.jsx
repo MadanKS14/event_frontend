@@ -4,19 +4,17 @@ import { api } from '../utils/api';
 import { Loader2, X, Save } from 'lucide-react';
 
 export const EditProfileModal = ({ isOpen, onClose }) => {
-  const { user, updateUser } = useAuth(); // Get user and the new updateUser function
+  const { user, updateUser } = useAuth(); 
   
-  // Initialize state
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // When the modal opens, pre-fill the name field
   useEffect(() => {
     if (isOpen && user) {
       setName(user.name);
-      setPassword(''); // Always clear password field
+      setPassword(''); 
       setError('');
     }
   }, [isOpen, user]);
@@ -26,22 +24,18 @@ export const EditProfileModal = ({ isOpen, onClose }) => {
     setLoading(true);
     setError('');
 
-    // Prepare only the data that needs to be updated
     const dataToUpdate = { name };
     if (password) {
-      // Only add password to the object if the user typed one
       dataToUpdate.password = password;
     }
 
     try {
-      // Call the API
       const updatedUser = await api.updateUserProfile(dataToUpdate);
       
-      // Use our new context function to update the user everywhere
       updateUser(updatedUser);
       
       setLoading(false);
-      onClose(); // Close the modal
+      onClose(); 
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -65,7 +59,6 @@ export const EditProfileModal = ({ isOpen, onClose }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4">
-            {/* Name Field */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Name
@@ -80,7 +73,6 @@ export const EditProfileModal = ({ isOpen, onClose }) => {
               />
             </div>
             
-            {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 New Password
@@ -95,7 +87,6 @@ export const EditProfileModal = ({ isOpen, onClose }) => {
               />
             </div>
             
-            {/* Error Message */}
             {error && (
               <div className="text-red-600 dark:text-red-400 text-sm">
                 {error}
@@ -103,7 +94,6 @@ export const EditProfileModal = ({ isOpen, onClose }) => {
             )}
           </div>
           
-          {/* Footer with Save Button */}
           <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t dark:border-gray-600 flex justify-end">
             <button
               type="submit"

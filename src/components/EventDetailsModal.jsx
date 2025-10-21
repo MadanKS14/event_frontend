@@ -5,8 +5,7 @@ import { TaskManager } from './TaskManager';
 import { api } from '../utils/api';
 import { getEventImage, getEventTypeFromName } from '../utils/eventImages';
 
-// --- User-Only Task List Component ---
-const UserTaskList = ({ tasks, onStatusChange, loading, isUpcoming }) => { // 1. Accept isUpcoming
+const UserTaskList = ({ tasks, onStatusChange, loading, isUpcoming }) => { 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -24,7 +23,7 @@ const UserTaskList = ({ tasks, onStatusChange, loading, isUpcoming }) => { // 1.
 
   return (
     <ul className="space-y-3">
-      {!isUpcoming && ( // 2. Add a message if event is completed
+      {!isUpcoming && ( 
         <p className="text-sm text-yellow-600 dark:text-yellow-400 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
           This event is completed. Tasks can no longer be updated.
         </p>
@@ -40,7 +39,7 @@ const UserTaskList = ({ tasks, onStatusChange, loading, isUpcoming }) => { // 1.
               className="h-5 w-5 rounded text-blue-500 focus:ring-blue-500 disabled:opacity-50"
               checked={task.status === "Completed"}
               onChange={(e) => onStatusChange(task._id, e.target.checked)}
-              disabled={!isUpcoming} // 3. Disable checkbox if not upcoming
+              disabled={!isUpcoming} 
             />
             <span
               className={`text-gray-900 dark:text-gray-100 ${
@@ -59,7 +58,6 @@ const UserTaskList = ({ tasks, onStatusChange, loading, isUpcoming }) => { // 1.
   );
 };
 
-// --- Main Modal Component ---
 export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers, isUser = false }) => {
   const [event, setEvent] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
@@ -67,7 +65,6 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers, isUser =
   const [userTasks, setUserTasks] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
 
-  // --- NEW: Calculate isUpcoming once event is loaded ---
   const isUpcoming = event ? new Date(event.date) > new Date() : false;
 
   const loadEvent = useCallback(async () => {
@@ -107,7 +104,6 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers, isUser =
   }, [isOpen, eventId, isUser, loadEvent, loadUserTasks]);
 
   const handleStatusChange = async (taskId, isChecked) => {
-    // Prevent change if event is over
     if (!isUpcoming) return; 
 
     const newStatus = isChecked ? "Completed" : "Pending";
@@ -120,7 +116,7 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers, isUser =
       await api.updateTaskStatus(taskId, newStatus);
     } catch (error) {
       console.error("Failed to update task:", error);
-      loadUserTasks(); // Roll back
+      loadUserTasks();
     }
   };
 
@@ -176,7 +172,6 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers, isUser =
                 )}
               </button>
               
-              {/* Hide Attendee tab for users */}
               {!isUser && (
                 <button
                   onClick={() => setActiveTab('attendees')}
@@ -221,32 +216,26 @@ export const EventDetailsModal = ({ isOpen, onClose, eventId, allUsers, isUser =
                       {event.description || 'No description provided'}
                     </p>
                   </div>
-                  {/* Attendee list on details tab */}
                 </div>
               )}
 
-              {/* Only show AttendeeManager if admin */}
               {activeTab === 'attendees' && !isUser && (
-                // Pass isUpcoming to AttendeeManager
                 <AttendeeManager event={event} onUpdate={loadEvent} isUpcoming={isUpcoming} />
               )}
               
-              {/* Role-based task content */}
               {activeTab === 'tasks' && (
                 isUser ? (
-                  // User's View:
                   <UserTaskList 
                     tasks={userTasks} 
                     loading={loadingTasks} 
                     onStatusChange={handleStatusChange} 
-                    isUpcoming={isUpcoming} // Pass isUpcoming
+                    isUpcoming={isUpcoming} 
                   />
                 ) : (
-                  // Admin's View:
                   <TaskManager 
                     event={event} 
                     allUsers={allUsers} 
-                    isUpcoming={isUpcoming} // Pass isUpcoming
+                    isUpcoming={isUpcoming} 
                   />
                 )
               )}
