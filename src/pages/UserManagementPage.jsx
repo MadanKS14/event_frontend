@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Plus, Info, Users, ShieldCheck, User } from 'lucide-react';
-import  CreateUserModal  from "../components/CreateUserModal";
-// --- Create User Modal Component removed from here ---
+import { Loader2, Plus, Info, Users, ShieldCheck, User, ArrowLeft } from 'lucide-react'; // <-- 1. Import ArrowLeft
+import CreateUserModal from "../components/CreateUserModal"; // Corrected import based on previous error
+import { useNavigate } from 'react-router-dom'; // Correctly imported
 
 // --- Main User Management Page ---
-const UserManagementPage = () => { // <-- Remove 'export' if using default export
+const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const navigate = useNavigate(); // Correctly initialized
   const { user } = useAuth();
 
   const loadUsers = useCallback(async () => {
@@ -18,6 +19,7 @@ const UserManagementPage = () => { // <-- Remove 'export' if using default expor
     setError('');
     try {
       const data = await api.getUsers();
+      // Filter out the current admin from the list
       setUsers(data.filter(u => u._id !== user._id));
     } catch (err) {
       console.error("Failed to load users:", err);
@@ -33,15 +35,31 @@ const UserManagementPage = () => { // <-- Remove 'export' if using default expor
 
   return (
     <div className="p-4 md:p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
+      {/* --- 2. Corrected Header Layout --- */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        {/* Container for Back Button and Title */}
+        <div className="flex items-center gap-3">
+           {/* Back Button */}
+           <button
+             onClick={() => navigate(-1)} // Or navigate('/admin/dashboard')
+             className="p-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+             aria-label="Go back"
+           >
+             <ArrowLeft className="w-6 h-6" />
+           </button>
+           {/* Title */}
+           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
+        </div>
+        {/* Create User Button */}
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 self-start md:self-center" // Adjusted alignment
         >
           <Plus className="w-5 h-5" /> Create User
         </button>
       </div>
+      {/* --- End Corrected Header --- */}
+
 
       {error && (
         <div className="mb-4 p-3 text-sm text-red-800 bg-red-100 dark:text-red-200 dark:bg-red-900/30 rounded-md flex items-center gap-2">
@@ -104,4 +122,4 @@ const UserManagementPage = () => { // <-- Remove 'export' if using default expor
   );
 };
 
-export default UserManagementPage; 
+export default UserManagementPage;
