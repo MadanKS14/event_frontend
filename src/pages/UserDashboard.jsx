@@ -1,16 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { ProfileDropdown } from "../components/ProfileDropdown"; // <-- You already have this (Good!)
+import { Navbar } from '../components/Navbar'; // Import the new Navbar
 import {
-  // LogOut icon is no longer needed here, it's in the dropdown
   Grid,
   Calendar as CalendarIcon,
-  Moon,
-  Sun,
   Loader2,
-  Bot,
-  LayoutGrid,
+  Filter,      // Icon for Filter dropdown
+  ArrowDownUp, // Icon for Sort dropdown
+  // Removed unused icons like Moon, Sun, Bot, LayoutGrid
 } from "lucide-react";
 import { api } from "../utils/api";
 import { EventCard } from "../components/EventCard";
@@ -19,199 +17,187 @@ import { CalendarView } from "../components/CalendarView";
 import { AIAssistant } from "../components/AIAssistant";
 import io from "socket.io-client";
 
-// Connect to the socket URL from your .env file
 const SOCKET_URL =
   import.meta.env.VITE_API_BASE_URL?.replace("/api", "") ||
   "http://localhost:5000";
-
 export const UserDashboard = () => {
-  const { user } = useAuth(); // 'logout' is no longer called directly here
-  const { isDark, toggleTheme } = useTheme();
+  // Authentication and Theme context hooks
+  const { user } = useAuth(); // Needed for role check if not passed directly
+
+  // State variables for data, UI control, modals, and filtering/sorting
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("grid");
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [showAI, setShowAI] = useState(false);
   const [socket, setSocket] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all'); // Filter state
+  const [sortOrder, setSortOrder] = useState('newest');   // Sort state
 
-  // Load events and set up socket on component mount
+  // Load data and setup socket on component mount
   useEffect(() => {
     loadEvents();
-
-    const newSocket = io(SOCKET_URL, {
-      transports: ["websocket", "polling"],
-    });
-
+    const newSocket = io(SOCKET_URL, { transports: ["websocket", "polling"] });
     newSocket.on("connect", () => console.log("WebSocket connected"));
-    newSocket.on("task-updated", () => loadEvents()); // Refresh on updates
-
+    newSocket.on("task-updated", loadEvents); // Refresh list if user's tasks change
     setSocket(newSocket);
+    return () => newSocket.disconnect();
+  }, []); // Empty dependency array ensures this runs only once on mount
 
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
-
-  // Fetch events. The backend will automatically send only the user's events.
+  // API call function for user (backend filters automatically)
   const loadEvents = async () => {
-    setLoading(true);
+    // setLoading(true); // Maybe only set loading on initial load?
     try {
       const data = await api.getEvents();
       setEvents(data);
-    } catch (error) {
-      console.error("Failed to load events:", error);
-    } finally {
-      setLoading(false);
+    } catch (error) { console.error("Failed to load events:", error); }
+    finally { if (loading) setLoading(false); } // Only stop initial loading spinner
+  };
+
+  // Event action handler (opens details modal)
+  const handleEventClick = (event) => { setSelectedEventId(event._id); };
+
+  // Process events (filter/sort for user view)
+  const processedEvents = useMemo(() => {
+    let processed = [...events];
+    // 1. Filter by Status
+    if (filterStatus !== 'all') {
+       const now = new Date();
+       processed = processed.filter(event => {
+           const eventDate = new Date(event.date);
+           const isUpcoming = eventDate > now;
+           return filterStatus === 'upcoming' ? isUpcoming : !isUpcoming;
+       });
     }
-  };
+    // 2. Sort by Date
+    processed.sort((a, b) => {
+       const dateA = new Date(a.date); const dateB = new Date(b.date);
+       return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+    return processed;
+  }, [events, filterStatus, sortOrder]); // Recalculate when these change
 
-  // Open the event details modal when an event is clicked
-  const handleEventClick = (event) => {
-    setSelectedEventId(event._id);
-  };
-
+  // Loading state display
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
-      </div>
-    );
+     return (<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900"><Loader2 className="w-12 h-12 animate-spin text-blue-500" /></div>);
   }
 
+  // Main component render
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-cyan-50/30 dark:from-gray-900 dark:to-gray-800 transition-colors">
-      {/* --- Navbar --- */}
-      <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo and Welcome */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-                <LayoutGrid className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Event Manager
-                </h1>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Welcome, {user?.name}
-                </p>
-              </div>
-            </div>
 
-            {/* Navbar Controls */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowAI(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
-              >
-                <Bot className="w-5 h-5" />
-                <span className="hidden sm:inline">AI Assistant</span>
-              </button>
-              <button
-                onClick={toggleTheme}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                {isDark ? (
-                  <Sun className="w-5 h-5 text-yellow-500" />
-                ) : (
-                  <Moon className="w-5 h-5 text-gray-700" />
-                )}
-              </button>
-              
-              {/* --- THIS IS THE CHANGE --- */}
-              <ProfileDropdown />
-              
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* --- Use the Reusable Navbar Component --- */}
+      <Navbar
+        role="user" // Specify the role
+        // Pass dummy/empty values for props Navbar expects but user doesn't use
+        searchTerm=""
+        onSearchChange={() => {}} // No-op function as users don't search globally
+        onToggleAI={() => setShowAI(prev => !prev)} // Pass AI toggle function
+      />
+      {/* --- End Navbar --- */}
 
       {/* --- Main Content Area --- */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header and Controls Row */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          {/* Header */}
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Your Events
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              View your upcoming and past events.
-            </p>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Your Events</h2>
+            <p className="text-gray-600 dark:text-gray-400">View your upcoming and past events.</p>
           </div>
-
-          {/* View Toggles (No "Create" button) */}
-          <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-md p-1">
-            <button
-              onClick={() => setView("grid")}
-              className={`p-2 rounded-md ${
-                view === "grid"
-                  ? "bg-blue-500 text-white"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              <Grid className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setView("calendar")}
-              className={`p-2 rounded-md ${
-                view === "calendar"
-                  ? "bg-blue-500 text-white"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              <CalendarIcon className="w-5 h-5" />
-            </button>
+          {/* Controls for User View (Filter/Sort/View Toggle) */}
+          <div className="flex flex-wrap gap-3 items-center">
+             {/* Filter Dropdown */}
+              <div className="relative">
+                 <label htmlFor="filterStatusUser" className="sr-only">Filter by status</label>
+                 <select
+                   id="filterStatusUser"
+                   value={filterStatus}
+                   onChange={(e) => setFilterStatus(e.target.value)}
+                   className="appearance-none pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                 >
+                   <option value="all">All Statuses</option>
+                   <option value="upcoming">Upcoming</option>
+                   <option value="completed">Completed</option>
+                 </select>
+                 <Filter className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+             {/* Sort Dropdown */}
+              <div className="relative">
+                 <label htmlFor="sortOrderUser" className="sr-only">Sort by date</label>
+                 <select
+                   id="sortOrderUser"
+                   value={sortOrder}
+                   onChange={(e) => setSortOrder(e.target.value)}
+                   className="appearance-none pl-3 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                 >
+                   <option value="newest">Date (Newest)</option>
+                   <option value="oldest">Date (Oldest)</option>
+                 </select>
+                 <ArrowDownUp className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            {/* View Toggle */}
+            <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-md p-1">
+              <button onClick={() => setView("grid")} aria-label="Grid view" className={`p-2 rounded-md transition-colors ${ view === "grid" ? "bg-blue-500 text-white" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" }`}>
+                  <Grid className="w-5 h-5" />
+              </button>
+              <button onClick={() => setView("calendar")} aria-label="Calendar view" className={`p-2 rounded-md transition-colors ${ view === "calendar" ? "bg-blue-500 text-white" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" }`}>
+                  <CalendarIcon className="w-5 h-5" />
+              </button>
+            </div>
+            {/* No Create Button for User */}
           </div>
         </div>
 
-        {/* --- Event List / Calendar --- */}
+        {/* --- Event Display Area (using processedEvents) --- */}
         {view === "grid" ? (
-          events.length > 0 ? (
+          processedEvents.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event) => (
+              {/* Map over processed events */}
+              {processedEvents.map((event) => (
                 <EventCard
-                  key={event._id}
-                  event={event}
-                  onClick={handleEventClick}
-                  isUser={true} // <-- IMPORTANT: Pass isUser prop to hide admin buttons
-                />
+                    key={event._id}
+                    event={event}
+                    onClick={handleEventClick}
+                    isUser={true} // Pass isUser=true to hide admin controls on card
+                 />
               ))}
             </div>
           ) : (
-            // Empty State
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
-                <CalendarIcon className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                No events found
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                You haven't been added to any events yet.
-              </p>
-            </div>
-          )
+             // Empty state message
+             <div className="text-center py-16">
+               <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                 <CalendarIcon className="w-10 h-10 text-gray-400" />
+               </div>
+               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                 {/* Message depends on whether filters are active */}
+                 {filterStatus !== 'all' || sortOrder !== 'newest' ? 'No events match your criteria' : 'No events found'}
+               </h3>
+               <p className="text-gray-600 dark:text-gray-400">
+                 {filterStatus !== 'all' || sortOrder !== 'newest' ? 'Try adjusting your filters.' : "You haven't been added to any events yet."}
+               </p>
+             </div>
+           )
         ) : (
-          <CalendarView events={events} onEventClick={handleEventClick} />
+          // Calendar View uses processed events
+          <CalendarView events={processedEvents} onEventClick={handleEventClick} />
         )}
       </div>
 
       {/* --- Modals --- */}
-      {/* Note: EventModal (for creating) is NOT rendered */}
       <EventDetailsModal
         isOpen={!!selectedEventId}
         onClose={() => setSelectedEventId(null)}
         eventId={selectedEventId}
-        isUser={true} // <-- IMPORTANT: Pass isUser to show the user task view
+        isUser={true} // Pass isUser=true to show user-specific view in modal
       />
       <AIAssistant
         isOpen={showAI}
         onClose={() => setShowAI(false)}
-        events={events}
+        events={events} // Pass original unfiltered events if AI needs full context
         onRefresh={loadEvents}
-        role="user" // <-- IMPORTANT: Tell AI assistant the role
-      />
+        role="user" // Pass role="user" for AI context
+       />
     </div>
   );
 };
+
