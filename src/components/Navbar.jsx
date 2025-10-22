@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; // To get user info and logout
 import { useTheme } from '../contexts/ThemeContext';
 import { ProfileDropdown } from './ProfileDropdown';
 import {
@@ -10,21 +10,29 @@ import {
   LayoutGrid,
   Users,
   Search,
-  Menu, 
-  X,      
+  Menu, // Hamburger icon
+  X,      // Close icon
+  LogOut, // Needed for mobile logout
 } from 'lucide-react';
 
-export const Navbar = ({ role, searchTerm, onSearchChange,onToggleAI }) => {
-  const { user } = useAuth();
+// Reusable Navbar component
+// Accepts props: role, searchTerm, onSearchChange (function), onToggleAI (function)
+export const Navbar = ({ role, searchTerm, onSearchChange, onToggleAI }) => {
+  const { user, logout } = useAuth(); // Get logout function from context
   const { isDark, toggleTheme } = useTheme();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State for mobile menu
 
   const isAdmin = role === 'admin';
+  const userInitial = user?.name ? user.name[0].toUpperCase() : '?';
+
+  // Function to close mobile menu, useful for link clicks
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   return (
     <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
+          {/* Left Side: Logo and Welcome */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
               <LayoutGrid className="w-6 h-6 text-white" />
@@ -50,32 +58,35 @@ export const Navbar = ({ role, searchTerm, onSearchChange,onToggleAI }) => {
                   type="text"
                   placeholder="Search events..."
                   value={searchTerm}
-                  onChange={onSearchChange} 
+                  onChange={onSearchChange} // Use handler from props
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
             </div>
           )}
+          {/* Spacer for non-admin users on desktop */}
+           {!isAdmin && <div className="hidden md:flex flex-1 max-w-lg mx-4"></div>}
 
-          
+          {/* Right Side: Desktop Controls (Hidden on Mobile) */}
           <div className="hidden md:flex items-center gap-3 flex-shrink-0">
-            {isAdmin && ( 
+            {isAdmin && ( // User Management link only for Admin
               <Link
                 to="/admin/users"
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shadow-sm"
                 title="Manage Users"
               >
                 <Users className="w-5 h-5" />
-                <span className="hidden lg:inline">Users</span> 
+                <span className="hidden lg:inline">Users</span>
               </Link>
             )}
-            {/* AI Assistant, Theme Toggle, Profile Dropdown */}
+            {/* --- CORRECTED Desktop AI Button --- */}
             <button
-              onClick={() => { /* Need to pass setShowAI function via props */ alert('AI Assistant needs prop drill'); }}
+              onClick={onToggleAI} // <-- Use the prop function directly
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
+              title="AI Assistant"
             >
               <Bot className="w-5 h-5" />
-              <span className="hidden lg:inline">AI Assistant</span> 
+              <span className="hidden lg:inline">AI Assistant</span>
             </button>
             <button
               onClick={toggleTheme}
@@ -87,6 +98,7 @@ export const Navbar = ({ role, searchTerm, onSearchChange,onToggleAI }) => {
             <ProfileDropdown />
           </div>
 
+          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -100,50 +112,45 @@ export const Navbar = ({ role, searchTerm, onSearchChange,onToggleAI }) => {
         </div>
       </div>
 
+      {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-16 inset-x-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-lg z-30">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-             {isAdmin && (
-                <div className="relative px-2 pb-2">
+             {isAdmin && ( // Mobile Search for Admin
+                <div className="relative px-2 pb-3 pt-1">
+                   {/* ... Search input code ... */}
                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                      <Search className="h-5 w-5 text-gray-400" />
                    </div>
-                   <input
-                     type="text"
-                     placeholder="Search events..."
-                     value={searchTerm}
-                     onChange={onSearchChange}
-                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                   />
+                   <input type="text" placeholder="Search events..." value={searchTerm} onChange={onSearchChange} className="block w-full pl-10 ..." />
                 </div>
               )}
-            {/* Links */}
-            {isAdmin && (
-              <Link
-                to="/admin/users"
-                onClick={() => setIsMobileMenuOpen(false)} 
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
+            {/* Links/Buttons */}
+            {isAdmin && ( // Mobile User Link for Admin
+              <Link to="/admin/users" onClick={closeMobileMenu} className="flex items-center gap-3 px-3 py-2 ...">
                 <Users className="w-5 h-5" /> Manage Users
               </Link>
             )}
+            {/* --- CORRECTED Mobile AI Button --- */}
             <button
-              onClick={() => { /* Need to pass setShowAI function via props */ alert('AI Assistant needs prop drill'); setIsMobileMenuOpen(false); }}
+              onClick={() => { onToggleAI(); closeMobileMenu(); }} // <-- Use the prop function
               className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <Bot className="w-5 h-5" /> AI Assistant
             </button>
             <button
-              onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }}
+              onClick={() => { toggleTheme(); closeMobileMenu(); }}
               className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               {isDark ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5" />}
               Toggle Theme
             </button>
+
+             {/* Mobile Profile/Logout Section */}
              <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
                <div className="flex items-center px-5">
                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-xl font-semibold">
-                   {user?.name ? user.name[0].toUpperCase() : '?'}
+                   {userInitial}
                  </div>
                  <div className="ml-3">
                    <div className="text-base font-medium text-gray-800 dark:text-white">{user?.name}</div>
@@ -151,11 +158,12 @@ export const Navbar = ({ role, searchTerm, onSearchChange,onToggleAI }) => {
                  </div>
                </div>
                <div className="mt-3 px-2 space-y-1">
+                 {/* --- CORRECTED Mobile Logout Button --- */}
                  <button
-                   onClick={() => {  alert('Logout needs context'); setIsMobileMenuOpen(false); }}
-                   className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                   onClick={() => { logout(); closeMobileMenu(); }} // <-- Use logout from context
+                   className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                  >
-                   Logout
+                   <LogOut className="w-5 h-5" /> Logout
                  </button>
                </div>
              </div>
@@ -165,3 +173,6 @@ export const Navbar = ({ role, searchTerm, onSearchChange,onToggleAI }) => {
     </nav>
   );
 };
+
+// If using default export:
+// export default Navbar;
