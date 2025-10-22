@@ -1,38 +1,23 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext'; // useAuth might not be needed here directly
 import { ThemeProvider } from './contexts/ThemeContext';
+import DashboardRedirect from './pages/DashboardRedirect'; // <-- 1. Keep the import (ensure it's default)
 
-// Import your new components
-import { Login } from './pages/Login'; // Assuming this is the path
-import AdminDashboard from './pages/AdminDashboard';
-import { UserDashboard } from './pages/UserDashboard';
-import UserManagementPage from './pages/UserManagementPage';
+// Import page components
+import { Login } from './pages/Login'; // Assuming default export
+import AdminDashboard from './pages/AdminDashboard'; // Assuming default export
+import { UserDashboard } from './pages/UserDashboard'; // Assuming named export
+import UserManagementPage from './pages/UserManagementPage'; // Assuming default export
+
+// Import route protection components
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
-// This is the "gatekeeper" component
-function DashboardRedirect() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    // Should be caught by ProtectedRoute, but good fallback
-    return <Navigate to="/login" replace />;
-  }
-  
-  // The main logic
-  return user.role === 'admin' 
-    ? <Navigate to="/admin/dashboard" replace />
-    : <Navigate to="/user/dashboard" replace />;
-}
-
+// --- 2. DELETE THE INLINE FUNCTION DEFINITION ---
+// function DashboardRedirect() {
+//   ... (REMOVE THIS ENTIRE FUNCTION BLOCK) ...
+// }
+// --- END DELETE ---
 
 function App() {
   return (
@@ -40,29 +25,31 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public Routes */}
             <Route path="/login" element={<Login />} />
-            {/* Add register route if you have one */}
+            {/* Add register route if needed */}
             {/* <Route path="/register" element={<Register />} /> */}
 
-            {/* Gatekeeper Route */}
+            {/* Gatekeeper Route - Redirects logged-in users */}
             <Route path="/" element={<ProtectedRoute />}>
               <Route path="/" element={<DashboardRedirect />} />
             </Route>
 
-            {/* Admin Routes */}
+            {/* Admin-Only Routes */}
             <Route element={<AdminRoute />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<UserManagementPage />} />
-              
+              {/* Add other admin routes here */}
             </Route>
-            
-            {/* User Routes */}
+
+            {/* Regular User Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/user/dashboard" element={<UserDashboard />} />
-              {/* e.g., <Route path="/user/profile" element={<Profile />} /> */}
-
+              {/* Add other user routes here, e.g., /user/profile */}
             </Route>
-            
+
+            {/* Optional: Add a 404 Not Found route */}
+            {/* <Route path="*" element={<NotFoundPage />} /> */}
 
           </Routes>
         </BrowserRouter>
