@@ -14,7 +14,7 @@ import {
   X,      
 } from 'lucide-react';
 
-export const Navbar = ({ role, searchTerm, onSearchChange }) => {
+export const Navbar = ({ role, searchTerm, onSearchChange,onToggleAI }) => {
   const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
