@@ -6,11 +6,12 @@ const getAuthHeader = () => {
 };
 
 export const api = {
-  async register(name, email, password) {
+  async register(name, email, password, role) { // <-- Add role argument
     const response = await fetch(`${API_BASE_URL}/users/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
+      // Send the role in the body
+      body: JSON.stringify({ name, email, password, role }), 
     });
     if (!response.ok) {
       const error = await response.json();

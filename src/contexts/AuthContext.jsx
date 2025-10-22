@@ -33,8 +33,9 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const register = async (name, email, password) => {
-    const data = await api.register(name, email, password);
+
+  const register = async (name, email, password, role) => { 
+    const data = await api.register(name, email, password, role); 
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data));
     setUser(data);
@@ -53,8 +54,6 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data));
-
-    // 2. Update the React state
     setUser(data);
   };
 
