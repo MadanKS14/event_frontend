@@ -194,6 +194,20 @@ export const api = {
     if (!response.ok) throw new Error('Failed to fetch progress');
     return response.json();
   },
+
+
+
+    async getMe() {
+    const response = await fetch(`${API_BASE_URL}/users/me`, {
+      headers: getAuthHeader(),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to fetch current user');
+    }
+    return response.json();
+  },
+
 };
 
 

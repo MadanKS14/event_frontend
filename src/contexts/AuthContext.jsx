@@ -15,43 +15,65 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 🔹 Fetch user info from backend when app loads or refreshes
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-
-    if (token && userData) {
-      setUser(JSON.parse(userData));
+    if (!token) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    const fetchUser = async () => {
+      try {
+        const userData = await api.getMe(); // always fetch latest role
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+      } catch (err) {
+        console.error('AuthContext: Failed to fetch user info:', err.message);
+        logout();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
   }, []);
 
+  // 🔹 Login
   const login = async (email, password) => {
     const data = await api.login(email, password);
     localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data));
-    setUser(data);
-    return data;
+
+    // Fetch the latest user info (role, etc.)
+    const userInfo = await api.getMe();
+    localStorage.setItem('user', JSON.stringify(userInfo));
+    setUser(userInfo);
+
+    return userInfo;
   };
 
-
-  const register = async (name, email, password, role) => { 
-    const data = await api.register(name, email, password, role); 
+  // 🔹 Register
+  const register = async (name, email, password, role = 'user') => {
+    const data = await api.register(name, email, password, role);
     localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data));
-    setUser(data);
-    return data;
+
+    // Fetch latest user details from backend (if available)
+    const userInfo = await api.getMe();
+    localStorage.setItem('user', JSON.stringify(userInfo));
+    setUser(userInfo);
+
+    return userInfo;
   };
 
+  // 🔹 Logout
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
   };
 
-
-
+  // 🔹 Force update user (useful after profile edit)
   const updateUser = (data) => {
-
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data));
     setUser(data);
@@ -59,13 +81,17 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    loading,
     login,
     register,
     logout,
-    loading,
     updateUser,
     isAuthenticated: !!user,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };

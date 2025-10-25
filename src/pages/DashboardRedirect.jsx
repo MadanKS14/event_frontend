@@ -1,11 +1,10 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; // Adjust path if needed
+import { useAuth } from '../contexts/AuthContext';
 
 const DashboardRedirect = () => {
   const { user, loading } = useAuth();
 
-  // Show loading indicator while authentication status is being checked
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -14,30 +13,27 @@ const DashboardRedirect = () => {
     );
   }
 
-  // If loading is done but there's no user, redirect to login
   if (!user) {
     console.error("DashboardRedirect: No user found after loading, redirecting to login.");
     return <Navigate to="/login" replace />;
   }
 
-  // Log the role for debugging
-  console.log("DashboardRedirect: Checking user role:", user.role);
+  // 🔥 Normalize role for consistent comparison
+  const role = user.role?.toLowerCase();
 
-  // Redirect based on the user's role
-  if (user.role === 'admin') {
-    console.log("Redirecting to /admin/dashboard");
+  console.log("DashboardRedirect: Checking user role:", role);
+
+  if (role === 'admin') {
+    console.log("✅ Redirecting to /admin/dashboard");
     return <Navigate to="/admin/dashboard" replace />;
   }
 
-  if (user.role === 'user') {
-    console.log("Redirecting to /user/dashboard");
+  if (role === 'user') {
+    console.log("✅ Redirecting to /user/dashboard");
     return <Navigate to="/user/dashboard" replace />;
   }
 
-  // Fallback: If role is missing or invalid, log error and redirect to login
   console.error(`DashboardRedirect: Invalid or missing user role "${user.role}", redirecting to login.`);
-  // Consider logging the user out here if the role is invalid
-  // logout(); // <-- You might need to import logout from useAuth if you do this
   return <Navigate to="/login" replace />;
 };
 
