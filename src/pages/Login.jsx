@@ -7,7 +7,8 @@ import { LogIn, UserPlus, Loader2, Mail, KeyRound } from 'lucide-react'; // Adde
 export const Login = () => {
   const [isLoginView, setIsLoginView] = useState(true); // State for Login vs Register view
   // Add 'role' to initial formData state, default to 'user'
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: '' });
+  // const [role, setRole] = useState("");
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth(); // Assuming context register accepts role
@@ -33,9 +34,10 @@ export const Login = () => {
         // Registration Logic
         if (!formData.name) throw new Error('Name required for registration');
         // Ensure role is valid before sending
-        const roleToSend = ['user', 'admin'].includes(formData.role) ? formData.role : 'user';
+        // const roleToSend = ['user', 'admin'].includes(formData.role) ? formData.role : 'user';
         // Pass role to the register function (ensure AuthContext.register accepts it)
-        data = await register(formData.name, formData.email, formData.password, roleToSend);
+        console.log(formData);
+        data = await register(formData.name, formData.email, formData.password, formData.role);
       }
       navigate('/'); // Navigate to dashboard redirect on success
     } catch (err) {

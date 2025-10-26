@@ -29,7 +29,7 @@ import io from "socket.io-client";
 // Define Socket.IO URL based on environment variable or default
 const SOCKET_URL =
   import.meta.env.VITE_API_BASE_URL?.replace("/api", "") ||
-  "http://localhost:5000";
+  "http://localhost:5001";
 
 const AdminDashboard = () => {
   // Authentication and Theme context hooks
