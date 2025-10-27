@@ -48,7 +48,6 @@ export const UserDashboard = () => {
     });
     
     newSocket.on("connect", () => {
-      console.log("WebSocket connected");
       setConnectionStatus('connected');
       setLastUpdate(new Date());
       newSocket.on("task-updated", () => {
@@ -73,7 +72,6 @@ export const UserDashboard = () => {
           setRetryCount(prev => prev + 1);
           
           if (retryCount >= 3) {
-            console.log("Too many polling failures, attempting WebSocket reconnection...");
             setRetryCount(0);
           }
         }
@@ -82,7 +80,6 @@ export const UserDashboard = () => {
     });
     
     newSocket.on("disconnect", () => {
-      console.log("WebSocket disconnected");
       setConnectionStatus('disconnected');
     });
     

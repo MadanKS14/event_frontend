@@ -21,15 +21,12 @@ const DashboardRedirect = () => {
 
   const role = user.role?.toLowerCase();
 
-  console.log("DashboardRedirect: Checking user role:", role);
 
   if (role === 'admin') {
-    console.log("✅ Redirecting to /admin/dashboard");
     return <Navigate to="/admin/dashboard" replace />;
   }
 
   if (role === 'user') {
-    console.log("✅ Redirecting to /user/dashboard");
     return <Navigate to="/user/dashboard" replace />;
   }
 

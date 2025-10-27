@@ -64,7 +64,6 @@ const AdminDashboard = () => {
     });
 
     newSocket.on("connect", () => {
-      console.log("WebSocket connected");
       setConnectionStatus('connected');
       setLastUpdate(new Date());
       newSocket.on("task-created", () => {
@@ -94,7 +93,6 @@ const AdminDashboard = () => {
           setRetryCount(prev => prev + 1);
           
           if (retryCount >= 3) {
-            console.log("Too many polling failures, attempting WebSocket reconnection...");
             setRetryCount(0);
           }
         }
@@ -103,7 +101,6 @@ const AdminDashboard = () => {
     });
 
     newSocket.on("disconnect", () => {
-      console.log("WebSocket disconnected");
       setConnectionStatus('disconnected');
     });
 
