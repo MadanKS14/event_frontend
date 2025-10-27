@@ -6,7 +6,7 @@ const ProtectedRoute = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // Or your spinner component
+    return <div>Loading...</div>; 
   }
 
   return user ? <Outlet /> : <Navigate to="/login" replace />;

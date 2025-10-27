@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Fetch user info from backend when app loads or refreshes
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -25,7 +24,7 @@ export const AuthProvider = ({ children }) => {
 
     const fetchUser = async () => {
       try {
-        const userData = await api.getMe(); // always fetch latest role
+        const userData = await api.getMe(); 
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
       } catch (err) {
@@ -39,12 +38,10 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, []);
 
-  // 🔹 Login
+
   const login = async (email, password) => {
     const data = await api.login(email, password);
     localStorage.setItem('token', data.token);
-
-    // Fetch the latest user info (role, etc.)
     const userInfo = await api.getMe();
     localStorage.setItem('user', JSON.stringify(userInfo));
     setUser(userInfo);
@@ -52,12 +49,10 @@ export const AuthProvider = ({ children }) => {
     return userInfo;
   };
 
-  // 🔹 Register
+
   const register = async (name, email, password, role = 'user') => {
     const data = await api.register(name, email, password, role);
     localStorage.setItem('token', data.token);
-
-    // Fetch latest user details from backend (if available)
     const userInfo = await api.getMe();
     localStorage.setItem('user', JSON.stringify(userInfo));
     setUser(userInfo);
@@ -65,14 +60,13 @@ export const AuthProvider = ({ children }) => {
     return userInfo;
   };
 
-  // 🔹 Logout
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
   };
 
-  // 🔹 Force update user (useful after profile edit)
   const updateUser = (data) => {
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data));

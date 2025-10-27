@@ -15,8 +15,8 @@ import {
   LayoutGrid,
   Users,
   Search,
-  Filter,      // Icon for Filter dropdown
-  ArrowDownUp, // Icon for Sort dropdown
+  Filter,
+  ArrowDownUp,
 } from "lucide-react";
 import { api } from "../utils/api";
 import { EventCard } from "../components/EventCard";
@@ -26,31 +26,26 @@ import { CalendarView } from "../components/CalendarView";
 import { AIAssistant } from "../components/AIAssistant";
 import io from "socket.io-client";
 
-// Define Socket.IO URL based on environment variable or default
 const SOCKET_URL =
   import.meta.env.VITE_API_BASE_URL?.replace("/api", "") ||
   "http://localhost:5001";
 
 const AdminDashboard = () => {
-  // Authentication and Theme context hooks
   const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const [events, setEvents] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("grid");
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [selectedEventId, setSelectedEventId] = useState(null);
+  const [showAI, setShowAI] = useState(false);
+  const [socket, setSocket] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [sortOrder, setSortOrder] = useState('newest');
 
-  // State variables for data, UI control, modals, and filtering/sorting
-  const [events, setEvents] = useState([]);          // Raw event data from API
-  const [allUsers, setAllUsers] = useState([]);        // User list for admin functions
-  const [loading, setLoading] = useState(true);        // Initial loading state
-  const [view, setView] = useState("grid");           // Current view: 'grid' or 'calendar'
-  const [showEventModal, setShowEventModal] = useState(false); // Visibility for Create/Edit modal
-  const [editingEvent, setEditingEvent] = useState(null);    // Event being edited (null for creation)
-  const [selectedEventId, setSelectedEventId] = useState(null); // ID for Details modal
-  const [showAI, setShowAI] = useState(false);         // Visibility for AI Assistant
-  const [socket, setSocket] = useState(null);         // Socket.IO instance
-  const [searchTerm, setSearchTerm] = useState('');      // Search input value
-  const [filterStatus, setFilterStatus] = useState('all'); // Filter: 'all', 'upcoming', 'completed'
-  const [sortOrder, setSortOrder] = useState('newest');   // Sort: 'newest', 'oldest'
-
-  // Effect hook for initial data loading and WebSocket setup
   useEffect(() => {
     loadEvents();
     loadUsers();
@@ -60,64 +55,54 @@ const AdminDashboard = () => {
     });
 
     newSocket.on("connect", () => console.log("WebSocket connected"));
-    // Refresh event list on task updates (e.g., progress changes could affect display)
     newSocket.on("task-created", loadEvents);
     newSocket.on("task-updated", loadEvents);
 
     setSocket(newSocket);
-
-    // Cleanup function to disconnect socket when component unmounts
     return () => {
       newSocket.disconnect();
     };
-  }, []); // Empty dependency array ensures this runs only once on mount
-
-  // Function to fetch all events (for admin)
+  }, []);
   const loadEvents = async () => {
     try {
       const data = await api.getEvents();
       setEvents(data);
     } catch (error) {
       console.error("Failed to load events:", error);
-      // Optionally set an error state here to show in the UI
     } finally {
-      // Only turn off the main loading spinner on the initial load
       if (loading) setLoading(false);
     }
   };
 
-  // Function to fetch all users (needed for assigning tasks, etc.)
   const loadUsers = async () => {
     try {
       const data = await api.getUsers();
       setAllUsers(data);
     } catch (error) {
       console.error("Failed to load users:", error);
-      // Optionally set an error state
     }
   };
 
-  // --- Event Action Handlers ---
   const handleCreateEvent = () => {
-    setEditingEvent(null); // Ensure no event data is pre-filled
+    setEditingEvent(null);
     setShowEventModal(true);
   };
 
   const handleEditEvent = (event) => {
-    setEditingEvent(event); // Pass event data to pre-fill modal
+    setEditingEvent(event);
     setShowEventModal(true);
   };
 
   const handleSaveEvent = async (eventData) => {
     try {
-      if (editingEvent) { // Check if we are editing or creating
+      if (editingEvent) {
         await api.updateEvent(editingEvent._id, eventData);
       } else {
         await api.createEvent(eventData);
       }
       setShowEventModal(false);
       setEditingEvent(null);
-      loadEvents(); // Refresh the event list
+      loadEvents();
     } catch (error) {
       console.error("Failed to save event:", error);
       alert(error.message || 'Failed to save event. Please try again.');
@@ -125,27 +110,23 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteEvent = async (event) => {
-    // Confirmation dialog before deleting
     if (!confirm(`Are you sure you want to delete "${event.name}"? This action cannot be undone.`)) return;
     try {
       await api.deleteEvent(event._id);
-      loadEvents(); // Refresh the event list
+      loadEvents();
     } catch (error) {
       console.error("Failed to delete event:", error);
       alert(error.message || 'Failed to delete event. Please try again.');
     }
   };
 
-  // Opens the EventDetailsModal when an event card/item is clicked
   const handleEventClick = (event) => {
     setSelectedEventId(event._id);
   };
 
-  // --- Derived State: Processed Events (Filter -> Sort -> Search) ---
   const processedEvents = useMemo(() => {
-    let processed = [...events]; // Start with a copy
+    let processed = [...events];
 
-    // 1. Filter by Status
     if (filterStatus !== 'all') {
       const now = new Date();
       processed = processed.filter(event => {
@@ -155,14 +136,12 @@ const AdminDashboard = () => {
       });
     }
 
-    // 2. Sort by Date
     processed.sort((a, b) => {
       const dateA = new Date(a.date);
       const dateB = new Date(b.date);
-      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB; // Descending for newest, Ascending for oldest
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
     });
 
-    // 3. Filter by Search Term (on name, description, location)
     if (searchTerm.trim()) {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       processed = processed.filter(event =>
@@ -173,9 +152,9 @@ const AdminDashboard = () => {
     }
 
     return processed;
-  }, [events, filterStatus, sortOrder, searchTerm]); // Recalculate only when these dependencies change
+  }, [events, filterStatus, sortOrder, searchTerm]);
 
-  // --- Render Loading State ---
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -187,10 +166,8 @@ const AdminDashboard = () => {
   // --- Render Main Dashboard ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-cyan-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 transition-colors">
-      {/* --- Navigation Bar --- */}
       <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 transition-colors">        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left Side: Logo and Welcome Message */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
               <LayoutGrid className="w-6 h-6 text-white" />
@@ -257,7 +234,6 @@ const AdminDashboard = () => {
 
       {/* --- Main Content Area --- */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header and Controls Row */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -268,9 +244,7 @@ const AdminDashboard = () => {
             </p>
           </div>
 
-          {/* Filter, Sort, View, Create Controls */}
           <div className="flex flex-wrap gap-3 items-center">
-            {/* Filter */}
             <div className="relative">
               <label htmlFor="filterStatus" className="sr-only">Filter by status</label>
               <select
@@ -285,7 +259,6 @@ const AdminDashboard = () => {
               </select>
               <Filter className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
-            {/* Sort */}
             <div className="relative">
               <label htmlFor="sortOrder" className="sr-only">Sort by date</label>
               <select
@@ -299,7 +272,6 @@ const AdminDashboard = () => {
               </select>
               <ArrowDownUp className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
-            {/* View Toggle */}
             <div className="flex bg-white dark:bg-gray-800 rounded-lg shadow-md p-1">
               <button onClick={() => setView("grid")} aria-label="Grid view" className={`p-2 rounded-md transition-colors ${view === "grid" ? "bg-blue-500 text-white" : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"}`}>
                 <Grid className="w-5 h-5" />
@@ -308,7 +280,6 @@ const AdminDashboard = () => {
                 <CalendarIcon className="w-5 h-5" />
               </button>
             </div>
-            {/* Create Button */}
             <button onClick={handleCreateEvent} className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl">
               <Plus className="w-5 h-5" />
               <span className="font-medium">Create Event</span>
@@ -327,7 +298,7 @@ const AdminDashboard = () => {
                   onEdit={handleEditEvent}
                   onDelete={handleDeleteEvent}
                   onClick={handleEventClick}
-                  isUser={false} // Explicitly admin view
+                  isUser={false}
                 />
               ))}
             </div>
@@ -339,7 +310,7 @@ const AdminDashboard = () => {
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                 {searchTerm || filterStatus !== 'all' ? 'No events match your criteria' : 'No events yet'}
               </h3>
-              {!(searchTerm || filterStatus !== 'all') && ( // Show create prompt only if no events *and* no filters active
+              {!(searchTerm || filterStatus !== 'all') && (
                 <>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
                     Create your first event to get started
@@ -356,7 +327,7 @@ const AdminDashboard = () => {
             </div>
           )
         ) : (
-          <CalendarView events={processedEvents} onEventClick={handleEventClick} /> // Use processed events for calendar
+          <CalendarView events={processedEvents} onEventClick={handleEventClick} />
         )}
       </div>
 
@@ -372,14 +343,14 @@ const AdminDashboard = () => {
         onClose={() => setSelectedEventId(null)}
         eventId={selectedEventId}
         allUsers={allUsers}
-        isUser={false} // Admin view
+        isUser={false}
       />
       <AIAssistant
         isOpen={showAI}
         onClose={() => setShowAI(false)}
-        events={events} // Pass original unfiltered events if AI needs full context
+        events={events}
         onRefresh={loadEvents}
-        role="admin" // Admin role for AI
+        role="admin"
       />
     </div>
   );

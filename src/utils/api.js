@@ -6,11 +6,10 @@ const getAuthHeader = () => {
 };
 
 export const api = {
-  async register(name, email, password, role) { // <-- Add role argument
+  async register(name, email, password, role) { 
     const response = await fetch(`${API_BASE_URL}/users/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Send the role in the body
       body: JSON.stringify({ name, email, password, role }), 
     });
     if (!response.ok) {
@@ -154,7 +153,6 @@ export const api = {
 
 
   async updateUserProfile(userData) {
-    // userData will be an object like { name: "New Name", password: "newpassword" }
     const response = await fetch(`${API_BASE_URL}/users/profile`, {
       method: 'PUT',
       headers: {
@@ -172,7 +170,7 @@ export const api = {
   },
 
   async createUserByAdmin(userData) {
-    const response = await fetch(`${API_BASE_URL}/users`, { // Hits POST /api/users
+    const response = await fetch(`${API_BASE_URL}/users`, { 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -209,6 +207,4 @@ export const api = {
   },
 
 };
-
-
 

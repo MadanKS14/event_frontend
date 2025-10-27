@@ -10,12 +10,10 @@ export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
   const [assignedUserId, setAssignedUserId] = useState('');
   const [error, setError] = useState('');
 
-  // Fetch tasks when the event ID changes
   const loadTasks = useCallback(async () => {
     if (!event?._id) return;
     setLoadingTasks(true);
     try {
-      // Admin fetches all tasks for the event
       const taskData = await api.getEventTasks(event._id);
       setTasks(taskData);
     } catch (err) {
@@ -30,7 +28,6 @@ export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
     loadTasks();
   }, [loadTasks]);
 
-  // Handle adding a new task
   const handleAddTask = async (e) => {
     e.preventDefault();
     if (!newTaskName || !newTaskDeadline || !assignedUserId || !isUpcoming) return;
@@ -41,35 +38,25 @@ export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
         name: newTaskName,
         deadline: newTaskDeadline,
         eventId: event._id,
-        assignedAttendeeId: assignedUserId, // Send assigned user ID
+        assignedAttendeeId: assignedUserId,
       });
-      // Clear form and reload tasks
       setNewTaskName('');
       setNewTaskDeadline('');
       setAssignedUserId('');
-      loadTasks(); // Reload tasks to show the new one
+      loadTasks();
     } catch (err) {
       console.error('Failed to create task:', err);
       setError(err.message || 'Failed to add task.');
     }
   };
 
-  // Handle deleting a task (Placeholder - needs backend implementation)
   const handleDeleteTask = async (taskId) => {
     if (!isUpcoming) return;
     alert('Delete task functionality needs backend implementation.');
-    // try {
-    //   // await api.deleteTask(taskId); // You'll need to add this API function
-    //   loadTasks();
-    // } catch (err) {
-    //   console.error('Failed to delete task:', err);
-    //   setError(err.message || 'Failed to delete task.');
-    // }
   };
 
   return (
     <div className="space-y-4">
-      {/* Warning message if event is completed */}
       {!isUpcoming && (
         <div className="flex items-center gap-2 p-3 text-sm text-yellow-800 bg-yellow-100 dark:text-yellow-200 dark:bg-yellow-900/30 rounded-md">
           <Info className="w-5 h-5 flex-shrink-0" />
@@ -156,7 +143,7 @@ export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
               <button
                 onClick={() => handleDeleteTask(task._id)}
                 className="p-1 text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!isUpcoming} // Disable delete if event completed
+                disabled={!isUpcoming}
                 aria-label="Delete task"
               >
                 <Trash2 className="w-4 h-4" />

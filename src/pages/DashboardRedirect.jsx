@@ -18,7 +18,7 @@ const DashboardRedirect = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // 🔥 Normalize role for consistent comparison
+
   const role = user.role?.toLowerCase();
 
   console.log("DashboardRedirect: Checking user role:", role);
