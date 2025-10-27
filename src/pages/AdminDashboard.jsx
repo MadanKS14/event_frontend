@@ -17,6 +17,7 @@ import {
   Search,
   Filter,
   ArrowDownUp,
+  RefreshCw,
 } from "lucide-react";
 import { api } from "../utils/api";
 import { EventCard } from "../components/EventCard";
@@ -42,6 +43,11 @@ const AdminDashboard = () => {
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [showAI, setShowAI] = useState(false);
   const [socket, setSocket] = useState(null);
+  const [pollInterval, setPollInterval] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest');
@@ -52,35 +58,104 @@ const AdminDashboard = () => {
 
     const newSocket = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
+      timeout: 5000,
+      forceNew: true,
+      reconnection: false 
     });
 
-    newSocket.on("connect", () => console.log("WebSocket connected"));
-    newSocket.on("task-created", loadEvents);
-    newSocket.on("task-updated", loadEvents);
+    newSocket.on("connect", () => {
+      console.log("WebSocket connected");
+      setConnectionStatus('connected');
+      setLastUpdate(new Date());
+      newSocket.on("task-created", () => {
+        loadEvents();
+        setLastUpdate(new Date());
+      });
+      newSocket.on("task-updated", () => {
+        loadEvents();
+        setLastUpdate(new Date());
+      });
+    });
+
+    newSocket.on("connect_error", (error) => {
+      console.warn("WebSocket connection failed, falling back to polling:", error.message);
+      setConnectionStatus('polling');
+      newSocket.disconnect();
+      setSocket(null);
+      
+      const interval = setInterval(async () => {
+        try {
+          await loadEvents();
+          await loadUsers();
+          setLastUpdate(new Date());
+          setRetryCount(0);
+        } catch (error) {
+          console.error("Polling error:", error);
+          setRetryCount(prev => prev + 1);
+          
+          if (retryCount >= 3) {
+            console.log("Too many polling failures, attempting WebSocket reconnection...");
+            setRetryCount(0);
+          }
+        }
+      }, 15000);
+      setPollInterval(interval);
+    });
+
+    newSocket.on("disconnect", () => {
+      console.log("WebSocket disconnected");
+      setConnectionStatus('disconnected');
+    });
 
     setSocket(newSocket);
     return () => {
       newSocket.disconnect();
+      const currentInterval = pollInterval;
+      if (currentInterval) {
+        clearInterval(currentInterval);
+      }
     };
   }, []);
-  const loadEvents = async () => {
+  const loadEvents = async (showRefreshIndicator = false) => {
     try {
+      if (showRefreshIndicator) {
+        setIsRefreshing(true);
+      }
       const data = await api.getEvents();
       setEvents(data);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error("Failed to load events:", error);
+      if (showRefreshIndicator) {
+        alert('Failed to refresh events. Please try again.');
+      }
     } finally {
       if (loading) setLoading(false);
+      if (showRefreshIndicator) setIsRefreshing(false);
     }
   };
 
-  const loadUsers = async () => {
+  const loadUsers = async (showRefreshIndicator = false) => {
     try {
+      if (showRefreshIndicator) {
+        setIsRefreshing(true);
+      }
       const data = await api.getUsers();
       setAllUsers(data);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error("Failed to load users:", error);
+      if (showRefreshIndicator) {
+        alert('Failed to refresh users. Please try again.');
+      }
+    } finally {
+      if (showRefreshIndicator) setIsRefreshing(false);
     }
+  };
+
+  const handleManualRefresh = () => {
+    loadEvents(true);
+    loadUsers(true);
   };
 
   const handleCreateEvent = () => {
@@ -102,7 +177,7 @@ const AdminDashboard = () => {
       }
       setShowEventModal(false);
       setEditingEvent(null);
-      loadEvents();
+      await loadEvents(true);
     } catch (error) {
       console.error("Failed to save event:", error);
       alert(error.message || 'Failed to save event. Please try again.');
@@ -113,7 +188,7 @@ const AdminDashboard = () => {
     if (!confirm(`Are you sure you want to delete "${event.name}"? This action cannot be undone.`)) return;
     try {
       await api.deleteEvent(event._id);
-      loadEvents();
+      await loadEvents(true);
     } catch (error) {
       console.error("Failed to delete event:", error);
       alert(error.message || 'Failed to delete event. Please try again.');
@@ -242,6 +317,31 @@ const AdminDashboard = () => {
             <p className="text-gray-600 dark:text-gray-400">
               Manage and organize all events
             </p>
+            {connectionStatus === 'polling' && (
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  Using polling for updates (WebSocket unavailable on Vercel)
+                </p>
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="p-1 hover:bg-amber-100 dark:hover:bg-amber-900/20 rounded transition-colors"
+                  title="Refresh now"
+                >
+                  <RefreshCw className={`w-4 h-4 text-amber-600 dark:text-amber-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            )}
+            {connectionStatus === 'connected' && (
+              <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                Real-time updates active
+              </p>
+            )}
+            {lastUpdate && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Last updated: {lastUpdate.toLocaleTimeString()}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-3 items-center">

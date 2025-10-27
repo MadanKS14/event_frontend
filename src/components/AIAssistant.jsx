@@ -14,11 +14,22 @@ import { api } from "../utils/api";
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 
 export const AIAssistant = ({ isOpen, onClose, events, onRefresh }) => {
+  const [user, setUser] = useState(null);
+  const fetchUser = async () => {
+    try {
+      const userData = await api.getMe();
+      setUser(userData);
+      localStorage.setItem("user", userData);
+    } catch (err) {
+      console.error("AuthContext: Failed to fetch user info:", err.message);
+    }
+  };
+  fetchUser();
   const [messages, setMessages] = useState([
     {
       role: "assistant",
       content:
-        "Hello! I'm your AI event assistant. I can help you create events, manage attendees, track tasks, and provide insights about your events. How can I assist you today?",
+        "Hello! I'm your AI event assistant. I can help you manage events, manage attendees, track tasks, and provide insights about your events. How can I assist you today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -78,7 +89,9 @@ Rules:
 Examples:
 "Let's meet tomorrow for coffee" -> {"hasEvent": true, "name": "Coffee Meeting", "description": "Coffee meeting", "location": "To be determined", "date": "${tomorrowStr}"}
 "Schedule team standup at office on Friday" -> {"hasEvent": true, "name": "Team Standup", "description": "Team standup meeting", "location": "Office", "date": "2025-10-24"}
-"Can you show my events?" -> {"hasEvent": false}`;
+"Can you show my events?" -> {"hasEvent": false}. 
+YOU MUST STRICTLY NOT LET THE USER CREATE OR ADD TASKS OR ASSIGN TASKS OR EDIT ANY EVENT DETAILS IF THEY ARE NOT AN ADMIN, REPLY SAYING THAT THEY DONT HAVE PERMISSION. 
+The role of the current user is ${user.role}.`;
 
       const response = await fetch(
         "https://openrouter.ai/api/v1/chat/completions",
@@ -166,7 +179,7 @@ Examples:
     const eventsList = events
       .map(
         (e, i) =>
-          `${i + 1}. **${e.name}** - ${new Date(
+          `${i + 1}. *${e.name}* - ${new Date(
             e.date
           ).toLocaleDateString()} at ${e.location}`
       )
@@ -225,9 +238,10 @@ Examples:
         return;
       }
 
-      const context = `You are an AI assistant for an event management dashboard. The user currently has ${events.length} events. You can help them create events (just parse their natural language), list events, manage attendees, track tasks, and provide insights. Be helpful, friendly, concise, and conversational.
+      const context = `You are an AI assistant for an event management dashboard. The user currently has ${events.length} events. You can help them create events IF AND ONLY IF THE USER'S ROLE IS ADMIN (just parse their natural language), list events, manage attendees, track tasks, and provide insights. Be helpful, friendly, concise, and conversational.
 
-If the user wants to create an event, acknowledge it and let them know you'll extract the details. For general questions, provide helpful guidance about what you can do.`;
+If the admin user wants to create an event, acknowledge it and let them know you'll extract the details. For general questions, provide helpful guidance about what you can do. YOU MUST STRICTLY NOT LET THE USER CREATE OR ADD TASKS OR ASSIGN TASKS OR EDIT ANY EVENT DETAILS IF THEY ARE NOT AN ADMIN, REPLY SAYING THAT THEY DONT HAVE PERMISSION. 
+The role of the current user is ${user.role}.`;
 
       const response = await fetch(
         "https://openrouter.ai/api/v1/chat/completions",

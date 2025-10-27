@@ -8,6 +8,7 @@ import {
   Loader2,
   Filter,
   ArrowDownUp,
+  RefreshCw,
 } from "lucide-react";
 import { api } from "../utils/api";
 import { EventCard } from "../components/EventCard";
@@ -28,24 +29,96 @@ export const UserDashboard = () => {
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [showAI, setShowAI] = useState(false);
   const [socket, setSocket] = useState(null);
+  const [pollInterval, setPollInterval] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest');
 
   useEffect(() => {
     loadEvents();
-    const newSocket = io(SOCKET_URL, { transports: ["websocket", "polling"] });
-    newSocket.on("connect", () => console.log("WebSocket connected"));
-    newSocket.on("task-updated", loadEvents);
+    
+    const newSocket = io(SOCKET_URL, { 
+      transports: ["websocket", "polling"],
+      timeout: 5000,
+      forceNew: true,
+      reconnection: false 
+    });
+    
+    newSocket.on("connect", () => {
+      console.log("WebSocket connected");
+      setConnectionStatus('connected');
+      setLastUpdate(new Date());
+      newSocket.on("task-updated", () => {
+        loadEvents();
+        setLastUpdate(new Date());
+      });
+    });
+    
+    newSocket.on("connect_error", (error) => {
+      console.warn("WebSocket connection failed, falling back to polling:", error.message);
+      setConnectionStatus('polling');
+      newSocket.disconnect();
+      setSocket(null);
+      
+      const interval = setInterval(async () => {
+        try {
+          await loadEvents();
+          setLastUpdate(new Date());
+          setRetryCount(0);
+        } catch (error) {
+          console.error("Polling error:", error);
+          setRetryCount(prev => prev + 1);
+          
+          if (retryCount >= 3) {
+            console.log("Too many polling failures, attempting WebSocket reconnection...");
+            setRetryCount(0);
+          }
+        }
+      }, 15000);
+      setPollInterval(interval);
+    });
+    
+    newSocket.on("disconnect", () => {
+      console.log("WebSocket disconnected");
+      setConnectionStatus('disconnected');
+    });
+    
     setSocket(newSocket);
-    return () => newSocket.disconnect();
+    
+    return () => {
+      newSocket.disconnect();
+      const currentInterval = pollInterval;
+      if (currentInterval) {
+        clearInterval(currentInterval);
+      }
+    };
   }, []);
 
-  const loadEvents = async () => {
+  const loadEvents = async (showRefreshIndicator = false) => {
     try {
+      if (showRefreshIndicator) {
+        setIsRefreshing(true);
+      }
       const data = await api.getEvents();
       setEvents(data);
-    } catch (error) { console.error("Failed to load events:", error); }
-    finally { if (loading) setLoading(false); }
+      setLastUpdate(new Date());
+    } catch (error) { 
+      console.error("Failed to load events:", error);
+      if (showRefreshIndicator) {
+        alert('Failed to refresh events. Please try again.');
+      }
+    }
+    finally { 
+      if (loading) setLoading(false);
+      if (showRefreshIndicator) setIsRefreshing(false);
+    }
+  };
+
+  const handleManualRefresh = () => {
+    loadEvents(true);
   };
 
   const handleEventClick = (event) => { setSelectedEventId(event._id); };
@@ -87,6 +160,31 @@ export const UserDashboard = () => {
           <div>
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Your Events</h2>
             <p className="text-gray-600 dark:text-gray-400">View your upcoming and past events.</p>
+            {connectionStatus === 'polling' && (
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  Using polling for updates (WebSocket unavailable - likely Vercel deployment)
+                </p>
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="p-1 hover:bg-amber-100 dark:hover:bg-amber-900/20 rounded transition-colors"
+                  title="Refresh now"
+                >
+                  <RefreshCw className={`w-4 h-4 text-amber-600 dark:text-amber-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            )}
+            {connectionStatus === 'connected' && (
+              <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                Real-time updates active
+              </p>
+            )}
+            {lastUpdate && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Last updated: {lastUpdate.toLocaleTimeString()}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-3 items-center">
               <div className="relative">
