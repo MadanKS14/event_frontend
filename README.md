@@ -28,10 +28,11 @@ A modern, feature-rich event management dashboard built with React, featuring AI
 - **Dynamic Event Images**: Automatic image selection based on event type
 - **AI Chat Assistant**: OpenRouter AI integration for natural language event management
 - **Multiple Views**: Grid and calendar views for events
-- **Task Progress Tracking**: Real-time progress calculation
+- **Interactive Progress Tracking**: Real-time animated progress bars with completion percentages
 - **Theme Toggle**: Beautiful light/dark mode switcher
 - **Premium Animations**: Smooth transitions and hover effects
 - **Event Categories**: Smart categorization with appropriate visuals
+- **Dual Progress Views**: Separate progress tracking for admins and users
 
 ## Tech Stack
 
@@ -154,7 +155,19 @@ Make sure your backend server is running on `http://localhost:5000`. Key endpoin
 3. Click "Add Task" to create new tasks
 4. Assign tasks to attendees
 5. Click checkboxes to mark tasks as complete
-6. View progress bar showing completion percentage
+6. **View Interactive Progress Bar** showing real-time completion percentage
+
+#### Progress Bar Features
+
+- **Admin View**: Blue/indigo gradient progress bar showing overall task completion across all assigned tasks
+- **User View**: Green/emerald gradient progress bar showing individual user's task completion
+- **Real-time Updates**: Progress bar animates smoothly when tasks are marked complete/incomplete
+- **Visual Feedback**: 
+  - Animated pulse effect on progress fill
+  - Smooth 500ms transition animations
+  - Percentage display with "X of Y completed" counter
+  - Full dark mode support
+- **Automatic Calculation**: Progress updates instantly as tasks change status
 
 ### AI Assistant
 
@@ -230,20 +243,31 @@ Body: {
 - Click events to view details
 - Color-coded event indicators
 
-### 3. AI Assistant
+### 3. Task Progress Tracking
+
+- **Animated Progress Bars**: Smooth, gradient-filled progress indicators
+- **Dual Views**: 
+  - Admins see overall task completion (blue/indigo theme)
+  - Users see personal task completion (green/emerald theme)
+- **Real-time Updates**: Progress updates instantly when tasks are completed
+- **Visual Polish**: Pulse animations, smooth transitions, and percentage displays
+- **Smart Calculation**: Automatically calculates completion percentage
+- **Dark Mode Support**: Beautiful progress bars in both light and dark themes
+
+### 4. AI Assistant
 
 - Natural language processing
 - Context-aware responses
 - Event management suggestions
 - Smart intent recognition
 
-### 4. Real-time Updates
+### 5. Real-time Updates
 
 - WebSocket connection for live updates
 - Automatic task status synchronization
 - Progress bar updates in real-time
 
-### 5. Dark Mode
+### 6. Dark Mode
 
 - Smooth theme transitions
 - Complete dark theme coverage
@@ -259,13 +283,13 @@ src/
 │   ├── AttendeeManager.jsx
 │   ├── CalendarView.jsx
 │   ├── EventCard.jsx
-│   ├── EventDetailsModal.jsx
+│   ├── EventDetailsModal.jsx       # Includes UserTaskList with progress bar
 │   ├── EventModal.jsx
 │   ├── Navbar.jsx
 │   ├── ProfileDropdown.jsx
 │   ├── AdminRoute.jsx
 │   ├── ProtectedRoute.jsx
-│   └── TaskManager.jsx
+│   └── TaskManager.jsx              # Includes admin progress bar
 ├── contexts/
 │   ├── AuthContext.jsx
 │   └── ThemeContext.jsx

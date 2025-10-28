@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Calendar, MapPin, Users as UsersIcon, ListTodo, Loader2 } from 'lucide-react';
+import { X, Calendar, MapPin, Users as UsersIcon, ListTodo, Loader2, CheckCircle2 } from 'lucide-react';
 import { AttendeeManager } from './AttendeeManager';
 import { TaskManager } from './TaskManager';
 import { api } from '../utils/api';
@@ -21,8 +21,40 @@ const UserTaskList = ({ tasks, onStatusChange, loading, isUpcoming }) => {
     );
   }
 
+  const completedCount = tasks.filter(task => task.status === 'Completed').length;
+  const totalCount = tasks.length;
+  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
   return (
-    <ul className="space-y-3">
+    <div className="space-y-4">
+      <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-600 rounded-lg border border-green-200 dark:border-gray-600">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <span className="font-semibold text-gray-900 dark:text-gray-100">
+              Your Task Progress
+            </span>
+          </div>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {completedCount} of {totalCount} completed
+          </span>
+        </div>
+        <div className="relative w-full h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500 ease-out rounded-full"
+            style={{ width: `${progressPercent}%` }}
+          >
+            <div className="absolute inset-0 bg-white/20 animate-pulse" />
+          </div>
+        </div>
+        <div className="mt-1 text-right">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+            {Math.round(progressPercent)}%
+          </span>
+        </div>
+      </div>
+
+      <ul className="space-y-3">
       {!isUpcoming && ( 
         <p className="text-sm text-yellow-600 dark:text-yellow-400 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
           This event is completed. Tasks can no longer be updated.
@@ -55,6 +87,7 @@ const UserTaskList = ({ tasks, onStatusChange, loading, isUpcoming }) => {
         </li>
       ))}
     </ul>
+    </div>
   );
 };
 

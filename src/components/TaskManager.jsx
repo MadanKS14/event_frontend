@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
-import { Plus, Trash2, Loader2, Info } from 'lucide-react';
+import { Plus, Trash2, Loader2, Info, CheckCircle2 } from 'lucide-react';
 
 export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
   const [tasks, setTasks] = useState([]);
@@ -9,6 +9,10 @@ export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
   const [newTaskDeadline, setNewTaskDeadline] = useState('');
   const [assignedUserId, setAssignedUserId] = useState('');
   const [error, setError] = useState('');
+
+  const completedCount = tasks.filter(task => task.status === 'Completed').length;
+  const totalCount = tasks.length;
+  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   const loadTasks = useCallback(async () => {
     if (!event?._id) return;
@@ -61,6 +65,35 @@ export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
         <div className="flex items-center gap-2 p-3 text-sm text-yellow-800 bg-yellow-100 dark:text-yellow-200 dark:bg-yellow-900/30 rounded-md">
           <Info className="w-5 h-5 flex-shrink-0" />
           <span>This event is completed. Tasks can no longer be managed.</span>
+        </div>
+      )}
+
+      {tasks.length > 0 && (
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-lg border border-blue-200 dark:border-gray-600">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                Task Completion Progress
+              </span>
+            </div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {completedCount} of {totalCount} completed
+            </span>
+          </div>
+          <div className="relative w-full h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out rounded-full"
+              style={{ width: `${progressPercent}%` }}
+            >
+              <div className="absolute inset-0 bg-white/20 animate-pulse" />
+            </div>
+          </div>
+          <div className="mt-1 text-right">
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+              {Math.round(progressPercent)}%
+            </span>
+          </div>
         </div>
       )}
 
