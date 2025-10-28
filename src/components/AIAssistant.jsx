@@ -61,7 +61,7 @@ export const AIAssistant = ({ isOpen, onClose, events, onRefresh }) => {
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
-      const systemPrompt = `You are an event extraction assistant. Extract event details from user messages and return ONLY a valid JSON object.
+      const systemPrompt = `You are an event extraction assistant. Extract event details from user messages and return ONLY a valid JSON object ONLY AND ONLY IF THE USER IS AN ADMIN. The role of the current user is ${user.role}.
 
 Current date: ${todayStr}
 Tomorrow's date: ${tomorrowStr}
@@ -90,7 +90,7 @@ Examples:
 "Let's meet tomorrow for coffee" -> {"hasEvent": true, "name": "Coffee Meeting", "description": "Coffee meeting", "location": "To be determined", "date": "${tomorrowStr}"}
 "Schedule team standup at office on Friday" -> {"hasEvent": true, "name": "Team Standup", "description": "Team standup meeting", "location": "Office", "date": "2025-10-24"}
 "Can you show my events?" -> {"hasEvent": false}. 
-YOU MUST STRICTLY NOT LET THE USER CREATE OR ADD TASKS OR ASSIGN TASKS OR EDIT ANY EVENT DETAILS IF THEY ARE NOT AN ADMIN, REPLY SAYING THAT THEY DONT HAVE PERMISSION. 
+YOU MUST STRICTLY NOT LET THE USER CREATE OR ADD TASKS OR ASSIGN TASKS OR EDIT TASKS OR DELETE TASKS OR EDIT ANY EVENT DETAILS IF THEY ARE NOT AN ADMIN, REPLY SAYING THAT THEY DONT HAVE PERMISSION. 
 The role of the current user is ${user.role}.`;
 
       const response = await fetch(
@@ -306,7 +306,6 @@ The role of the current user is ${user.role}.`;
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col border-l border-gray-200 dark:border-gray-700 transition-all duration-300 animate-slide-in">
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 relative overflow-hidden">
-        {/* <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-transparent animate-shimmer" /> */}
         <div className="flex items-center gap-2 text-white relative z-10">
           <div className="relative">
             <Bot className="w-6 h-6" />

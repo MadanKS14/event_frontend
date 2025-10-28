@@ -160,7 +160,7 @@ export const UserDashboard = () => {
             {connectionStatus === 'polling' && (
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-sm text-amber-600 dark:text-amber-400">
-                  Using polling for updates (WebSocket unavailable - likely Vercel deployment)
+                  Using polling for updates (WebSocket unavailable)
                 </p>
                 <button
                   onClick={handleManualRefresh}

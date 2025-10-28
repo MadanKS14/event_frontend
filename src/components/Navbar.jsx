@@ -28,7 +28,6 @@ export const Navbar = ({ role, searchTerm, onSearchChange, onToggleAI }) => {
     <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left Side: Logo and Welcome */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
               <LayoutGrid className="w-6 h-6 text-white" />
@@ -43,7 +42,6 @@ export const Navbar = ({ role, searchTerm, onSearchChange, onToggleAI }) => {
             </div>
           </div>
 
-          {/* Middle: Search Bar (Only for Admin on Desktop) */}
           {isAdmin && (
             <div className="hidden md:flex flex-1 max-w-lg mx-4">
               <div className="relative w-full">
@@ -72,7 +70,6 @@ export const Navbar = ({ role, searchTerm, onSearchChange, onToggleAI }) => {
                 <span className="hidden lg:inline">Users</span>
               </Link>
             )}
-            {/* --- CORRECTED Desktop AI Button --- */}
             <button
               onClick={onToggleAI}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
@@ -91,7 +88,6 @@ export const Navbar = ({ role, searchTerm, onSearchChange, onToggleAI }) => {
             <ProfileDropdown />
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -105,7 +101,6 @@ export const Navbar = ({ role, searchTerm, onSearchChange, onToggleAI }) => {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-16 inset-x-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-lg z-30">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
@@ -136,7 +131,6 @@ export const Navbar = ({ role, searchTerm, onSearchChange, onToggleAI }) => {
               Toggle Theme
             </button>
 
-            {/* Mobile Profile/Logout Section */}
             <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center px-5">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-xl font-semibold">
@@ -148,7 +142,6 @@ export const Navbar = ({ role, searchTerm, onSearchChange, onToggleAI }) => {
                 </div>
               </div>
               <div className="mt-3 px-2 space-y-1">
-                {/* --- CORRECTED Mobile Logout Button --- */}
                 <button
                   onClick={() => { logout(); closeMobileMenu(); }}
                   className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700"

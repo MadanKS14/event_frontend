@@ -64,7 +64,6 @@ export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
         </div>
       )}
 
-      {/* --- Add New Task Form (Admin only) --- */}
       <form onSubmit={handleAddTask} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end p-4 border dark:border-gray-700 rounded-lg">
         <div>
           <label htmlFor="taskName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
@@ -119,7 +118,6 @@ export const TaskManager = ({ event, allUsers = [], isUpcoming }) => {
       </form>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      {/* --- Task List --- */}
       {loadingTasks ? (
         <div className="flex justify-center items-center h-20">
           <Loader2 className="w-6 h-6 animate-spin text-blue-500" />

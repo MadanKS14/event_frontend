@@ -52,7 +52,7 @@ A modern, feature-rich event management dashboard built with React, featuring AI
 
 ### AI Integration
 
-- **OpenRouter API**: AI-powered assistant using meta-llama/llama-3.2-3b-instruct
+- Optional OpenRouter integration can be added; current codebase does not require an AI key to run.
 
 ## Setup Instructions
 
@@ -60,7 +60,6 @@ A modern, feature-rich event management dashboard built with React, featuring AI
 
 - Node.js 18+ installed
 - Backend server running (see backend setup)
-- OpenRouter API key (optional, for AI features)
 
 ### Installation
 
@@ -79,11 +78,10 @@ A modern, feature-rich event management dashboard built with React, featuring AI
 
 3. **Configure environment variables**
 
-   Update `.env` file with your backend URL:
+   Create `.env` in `event_frontend/` with your backend URL:
 
    ```env
    VITE_API_BASE_URL=http://localhost:5000/api
-   VITE_OPENROUTER_API_KEY=your_openrouter_api_key_here
    ```
 
 4. **Start the development server**
@@ -97,32 +95,35 @@ A modern, feature-rich event management dashboard built with React, featuring AI
    npm run build
    ```
 
-### Backend Setup
+### Backend Setup (summary)
 
-Make sure your backend server is running on `http://localhost:5000` with the following endpoints available:
+Make sure your backend server is running on `http://localhost:5000`. Key endpoints used by the frontend are below. See `event_backend/README.md` for full details.
 
 #### User Routes (`/api/users`)
 
-- `POST /register` - Register new user
-- `POST /login` - Login user
-- `GET /` - Get all users (authenticated)
+- `POST /register` — Register new user `{ name, email, password, role }`
+- `POST /login` — Login `{ email, password }`
+- `GET /me` — Get current user (auth required)
+- `GET /` — List users (admin only)
+- `PUT /profile` — Update current user `{ name?, password? }`
+- `POST /` — Create user (admin only)
 
 #### Event Routes (`/api/events`)
 
-- `POST /` - Create event
-- `GET /` - Get all events for user
-- `GET /:id` - Get single event
-- `PUT /:id` - Update event
-- `DELETE /:id` - Delete event
-- `POST /:id/attendees` - Add attendee
-- `DELETE /:id/attendees` - Remove attendee
+- `GET /` — Admin: all events, User: attending events
+- `POST /` — Create event (admin only)
+- `GET /:id` — View one (admin or attendee)
+- `PUT /:id` — Update (admin only; not past events)
+- `DELETE /:id` — Delete (admin only; not past events)
+- `POST /:id/attendees` — Add attendee (admin only) `{ userId }`
+- `DELETE /:id/attendees` — Remove attendee (admin only) `{ userId }`
 
 #### Task Routes (`/api/tasks`)
 
-- `POST /` - Create task
-- `GET /event/:eventId` - Get tasks for event
-- `PUT /:id` - Update task status
-- `GET /progress/:eventId` - Get event progress
+- `POST /` — Create task (admin only) `{ name, deadline, eventId, assignedAttendeeId }`
+- `GET /event/:eventId` — Admin: all tasks; User: only assigned
+- `PUT /:id` — Update task status `{ status: "Pending"|"Completed" }`
+- `GET /progress/:eventId` — Get `{ progress }` percent
 
 ## Usage Guide
 
@@ -157,12 +158,7 @@ Make sure your backend server is running on `http://localhost:5000` with the fol
 
 ### AI Assistant
 
-1. Click the "AI Assistant" button in the navigation
-2. Ask questions or request help with:
-   - Creating events
-   - Viewing event lists
-   - Getting task status
-   - General event management queries
+The UI includes an AI panel component. It works without external keys by default. If you add OpenRouter later, expose keys as needed and wire calls inside `AIAssistant.jsx`.
 
 ### Theme Toggle
 
@@ -259,24 +255,32 @@ Body: {
 ```
 src/
 ├── components/
-│   ├── AIAssistant.jsx          # AI chatbot component
-│   ├── AttendeeManager.jsx      # Attendee management
-│   ├── CalendarView.jsx         # Calendar view component
-│   ├── Dashboard.jsx            # Main dashboard layout
-│   ├── EventCard.jsx            # Event card component
-│   ├── EventDetailsModal.jsx   # Event details modal
-│   ├── EventModal.jsx           # Create/Edit event modal
-│   ├── Login.jsx                # Authentication component
-│   └── TaskManager.jsx          # Task management component
+│   ├── AIAssistant.jsx
+│   ├── AttendeeManager.jsx
+│   ├── CalendarView.jsx
+│   ├── EventCard.jsx
+│   ├── EventDetailsModal.jsx
+│   ├── EventModal.jsx
+│   ├── Navbar.jsx
+│   ├── ProfileDropdown.jsx
+│   ├── AdminRoute.jsx
+│   ├── ProtectedRoute.jsx
+│   └── TaskManager.jsx
 ├── contexts/
-│   ├── AuthContext.jsx          # Authentication context
-│   └── ThemeContext.jsx         # Theme management context
+│   ├── AuthContext.jsx
+│   └── ThemeContext.jsx
+├── pages/
+│   ├── Login.jsx
+│   ├── AdminDashboard.jsx
+│   ├── UserDashboard.jsx
+│   ├── DashboardRedirect.jsx
+│   └── UserManagementPage.jsx
 ├── utils/
-│   ├── api.js                   # API service functions
-│   └── eventImages.js           # Event image utilities
-├── App.jsx                      # Main app component
-├── main.jsx                     # App entry point
-└── index.css                    # Global styles
+│   ├── api.js
+│   └── eventImages.js
+├── App.jsx
+├── main.jsx
+└── index.css
 ```
 
 ## Design Philosophy
@@ -326,18 +330,12 @@ src/
 - [ ] Drag-and-drop calendar interactions
 - [ ] Mobile app version
 
-## Contributing
+## Scripts
 
-This project was created as part of a hackathon assessment for Webknot Technologies.
-
-## License
-
-Proprietary - Created for assessment purposes
-
-## Contact
-
-For questions or feedback, please contact the developer.
-
----
-
-**Built with ❤️ for Webknot Technologies Hackathon**
+From `event_frontend/`:
+```bash
+npm run dev       # start Vite dev server
+npm run build     # build production bundle
+npm run preview   # preview production build
+npm run lint      # run eslint
+```
