@@ -283,13 +283,13 @@ src/
 │   ├── AttendeeManager.jsx
 │   ├── CalendarView.jsx
 │   ├── EventCard.jsx
-│   ├── EventDetailsModal.jsx       # Includes UserTaskList with progress bar
+│   ├── EventDetailsModal.jsx       
 │   ├── EventModal.jsx
 │   ├── Navbar.jsx
 │   ├── ProfileDropdown.jsx
 │   ├── AdminRoute.jsx
 │   ├── ProtectedRoute.jsx
-│   └── TaskManager.jsx              # Includes admin progress bar
+│   └── TaskManager.jsx             
 ├── contexts/
 │   ├── AuthContext.jsx
 │   └── ThemeContext.jsx
