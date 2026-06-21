@@ -33,18 +33,32 @@ export const EventModal = ({ isOpen, onClose, onSave, event }) => {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    const newErrors = validate();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+  e.preventDefault();
 
-    onSave({
-      ...formData,
-      date: new Date(formData.date).toISOString(),
-    });
-  };
+  const newErrors = validate();
+
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+
+  
+
+  const parsedDate = new Date(formData.date);
+
+  if (isNaN(parsedDate.getTime())) {
+    setErrors((prev) => ({
+      ...prev,
+      date: "Please select a valid date and time",
+    }));
+    return;
+  }
+
+  onSave({
+    ...formData,
+    date: parsedDate.toISOString(),
+  });
+};
 
   if (!isOpen) return null;
 
